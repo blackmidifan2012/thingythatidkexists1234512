@@ -1,0 +1,12 @@
+/* Notes: English -> Turkish. One entry per line: {"English", "Türkçe"}, */
+	{"Notes", "Notlar"},
+	{"all notes", "tüm notlar"},
+	{"search notes", "notlarda ara"},
+	{"no notes yet. tap + to add one.", "henüz not yok. eklemek için + simgesine dokunun."},
+	{"no results", "sonuç yok"},
+	{"new", "yeni"},
+	{"delete", "sil"},
+	{"cancel", "iptal"},
+	{"delete note?", "not silinsin mi?"},
+	{"this note will be deleted.", "bu not silinecek."},
+	{"type a note", "bir not yazın"},

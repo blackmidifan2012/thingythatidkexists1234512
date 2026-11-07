@@ -1,0 +1,6 @@
+#!/bin/sh
+# Starts metrowl inside a D-Bus session when none is running (needed for notifications).
+if [ -z "$DBUS_SESSION_BUS_ADDRESS" ] && command -v dbus-run-session >/dev/null 2>&1; then
+	exec dbus-run-session -- metrowl "$@"
+fi
+exec metrowl "$@"

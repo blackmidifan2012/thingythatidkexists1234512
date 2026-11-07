@@ -1,0 +1,13 @@
+/* Video: English -> Turkish. One entry per line: {"English", "Türkçe"}, */
+	{"Video", "Video"},
+	{"videos", "videolar"},
+	{"no videos found. videos in your Videos and Downloads folders show up here.", "video bulunamadı. Videolar ve İndirilenler klasörlerinizdeki videolar burada görünür."},
+	{"can't play this video", "bu video oynatılamıyor"},
+	{"install a video player such as mpv, celluloid, vlc or totem.", "mpv, celluloid, vlc veya totem gibi bir video oynatıcı yükleyin."},
+	{"couldn't delete the video", "video silinemedi"},
+	{"delete video?", "video silinsin mi?"},
+	{"delete", "sil"},
+	{"cancel", "iptal"},
+	{"play", "oynat"},
+	{"refresh", "yenile"},
+	{"today", "bugün"},

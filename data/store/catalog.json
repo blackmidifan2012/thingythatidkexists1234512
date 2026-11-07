@@ -1,0 +1,674 @@
+{
+ "apps": [
+  {
+   "id": "com.valvesoftware.Steam",
+   "name": "Steam",
+   "developer": "Valve Corporation",
+   "category": "games",
+   "summary": "Launcher for the Steam software distribution service",
+   "description": "Steam is the ultimate destination for playing, discussing and creating games. Buy and install thousands of titles, chat with friends and join the community. Proton lets many Windows games run on Linux.",
+   "color": "#0050EF",
+   "featured": true
+  },
+  {
+   "id": "net.supertuxkart.SuperTuxKart",
+   "name": "SuperTuxKart",
+   "developer": "SuperTuxKart Team",
+   "category": "games",
+   "summary": "A 3D open-source kart racing game",
+   "description": "Race against friends or the computer on dozens of tracks full of shortcuts and power-ups. Play the story mode, battle in arenas or race online. Tux and his friends are ready to go.",
+   "color": "#FA6800",
+   "featured": true
+  },
+  {
+   "id": "org.luanti.luanti",
+   "name": "Luanti",
+   "developer": "Luanti Team",
+   "category": "games",
+   "summary": "Block-based multiplayer game platform",
+   "description": "Luanti (formerly Minetest) is an open source voxel game engine. Explore, dig and build in endless worlds, play hundreds of community games or host your own multiplayer server.",
+   "color": "#60A917",
+   "featured": false
+  },
+  {
+   "id": "com.play0ad.zeroad",
+   "name": "0 A.D.",
+   "developer": "Wildfire Games",
+   "category": "games",
+   "summary": "Real-time strategy game",
+   "description": "0 A.D. is a free historical real-time strategy game of ancient warfare. Build a civilisation, gather resources and lead armies in single player or online matches.",
+   "color": "#825A2C",
+   "featured": false
+  },
+  {
+   "id": "org.openttd.OpenTTD",
+   "name": "OpenTTD",
+   "developer": "The OpenTTD team",
+   "category": "games",
+   "summary": "Simulation game based upon Transport Tycoon Deluxe",
+   "description": "Build a transport empire with trains, road vehicles, ships and aircraft. OpenTTD recreates Transport Tycoon Deluxe with bigger maps, online multiplayer and many improvements.",
+   "color": "#6D8764",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Mines",
+   "name": "Mines",
+   "developer": "Robert Roth",
+   "category": "games",
+   "summary": "Clear hidden mines from a minefield",
+   "description": "The classic puzzle game: uncover the field without stepping on a mine. Numbers show how many mines touch each square. Choose a board size and beat your best time.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "org.kde.kpat",
+   "name": "KPatience",
+   "developer": "KDE",
+   "category": "games",
+   "summary": "Solitaire card game",
+   "description": "KPatience offers more than a dozen solitaire games including Klondike, Spider, FreeCell and Golf. It has hints, unlimited undo and statistics for every game.",
+   "color": "#008A00",
+   "featured": false
+  },
+  {
+   "id": "org.libretro.RetroArch",
+   "name": "RetroArch",
+   "developer": "libretro",
+   "category": "games",
+   "summary": "Frontend for emulators, game engines and media players",
+   "description": "RetroArch brings classic consoles, arcade machines and game engines together in one app. It supports controllers, shaders, netplay and rewinding.",
+   "color": "#AA00FF",
+   "featured": false
+  },
+  {
+   "id": "com.heroicgameslauncher.hgl",
+   "name": "Heroic",
+   "developer": "Heroic Games Launcher",
+   "category": "games",
+   "summary": "Play Epic, GOG and Amazon Games",
+   "description": "Heroic is an open source launcher for your Epic, GOG and Amazon Prime Gaming libraries. Install, update and play your games with Wine or Proton.",
+   "color": "#6A00FF",
+   "featured": false
+  },
+  {
+   "id": "org.prismlauncher.PrismLauncher",
+   "name": "Prism Launcher",
+   "developer": "Prism Launcher Contributors",
+   "category": "games",
+   "summary": "Custom Minecraft launcher for multiple installations",
+   "description": "Prism Launcher manages many Minecraft installations at once. Keep separate instances for different versions and mod packs and switch between them in a click.",
+   "color": "#008A00",
+   "featured": false
+  },
+  {
+   "id": "org.videolan.VLC",
+   "name": "VLC",
+   "developer": "VideoLAN et al.",
+   "category": "music+video",
+   "summary": "The open-source multimedia player",
+   "description": "VLC plays almost every video and audio file, discs, webcams and network streams without extra codecs. It is simple, fast and powerful, and it is free.",
+   "color": "#FA6800",
+   "featured": true
+  },
+  {
+   "id": "io.mpv.Mpv",
+   "name": "mpv",
+   "developer": "The mpv player contributors",
+   "category": "music+video",
+   "summary": "A free, open source, and cross-platform media player",
+   "description": "mpv is a lightweight media player with high quality video output and support for a huge range of formats. It is controlled with the keyboard and a minimal on-screen controller.",
+   "color": "#76608A",
+   "featured": false
+  },
+  {
+   "id": "com.spotify.Client",
+   "name": "Spotify",
+   "developer": "Spotify",
+   "category": "music+video",
+   "summary": "Online music streaming service",
+   "description": "Listen to millions of songs and podcasts. Create playlists, discover new music made for you and pick up where you left off on any device.",
+   "color": "#60A917",
+   "featured": true
+  },
+  {
+   "id": "org.gnome.Podcasts",
+   "name": "Podcasts",
+   "developer": "The Podcasts developers",
+   "category": "music+video",
+   "summary": "Listen to your favorite shows",
+   "description": "Subscribe to podcasts from any feed and listen to new episodes as they arrive. Episodes can be streamed or downloaded to listen offline.",
+   "color": "#D80073",
+   "featured": false
+  },
+  {
+   "id": "de.haeckerfelix.Shortwave",
+   "name": "Shortwave",
+   "developer": "Felix Häcker",
+   "category": "music+video",
+   "summary": "Listen to internet radio",
+   "description": "Shortwave gives you access to more than 30,000 internet radio stations. Search for stations, save your favourites to the library and listen with a single tap.",
+   "color": "#A20025",
+   "featured": false
+  },
+  {
+   "id": "org.kde.kdenlive",
+   "name": "Kdenlive",
+   "developer": "KDE",
+   "category": "music+video",
+   "summary": "Video editor",
+   "description": "Kdenlive is a powerful non-linear video editor. Edit on multiple tracks, add effects and transitions, colour correct your clips and export to many formats.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "com.obsproject.Studio",
+   "name": "OBS Studio",
+   "developer": "OBS Project",
+   "category": "music+video",
+   "summary": "Live stream and record videos",
+   "description": "OBS Studio records and streams video with high performance. Combine screens, windows, cameras and images into scenes and switch between them live.",
+   "color": "#87794E",
+   "featured": true
+  },
+  {
+   "id": "org.audacityteam.Audacity",
+   "name": "Audacity",
+   "developer": "Muse Group",
+   "category": "music+video",
+   "summary": "Audio editing and recording",
+   "description": "Audacity is an easy to use, multi-track audio editor and recorder. Record live audio, edit sound files, remove noise and apply effects.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "fr.handbrake.ghb",
+   "name": "HandBrake",
+   "developer": "HandBrake Team",
+   "category": "music+video",
+   "summary": "Video transcoder",
+   "description": "HandBrake converts video from nearly any format to modern, widely supported codecs. Presets make it easy to create files for phones, tablets and the web.",
+   "color": "#F0A30A",
+   "featured": false
+  },
+  {
+   "id": "org.gimp.GIMP",
+   "name": "GIMP",
+   "developer": "The GIMP team",
+   "category": "photo",
+   "summary": "High-end image creation and manipulation",
+   "description": "GIMP is a powerful image editor for photo retouching, image composition and artwork. It has layers, masks, filters and support for many file formats.",
+   "color": "#87794E",
+   "featured": true
+  },
+  {
+   "id": "org.inkscape.Inkscape",
+   "name": "Inkscape",
+   "developer": "The Inkscape Community",
+   "category": "photo",
+   "summary": "Vector graphics editor",
+   "description": "Inkscape is a professional vector graphics editor. Create illustrations, logos, diagrams and icons and save them as SVG or export to PNG and PDF.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "org.kde.krita",
+   "name": "Krita",
+   "developer": "Krita Foundation",
+   "category": "photo",
+   "summary": "Digital painting, creative freedom",
+   "description": "Krita is a professional painting program made by artists. It has brush engines, layers, animation tools and everything you need to paint and draw.",
+   "color": "#D80073",
+   "featured": true
+  },
+  {
+   "id": "org.darktable.Darktable",
+   "name": "darktable",
+   "developer": "darktable developers",
+   "category": "photo",
+   "summary": "Organize and develop images from digital cameras",
+   "description": "darktable is a virtual light table and darkroom for photographers. Manage your raw photos and develop them with non-destructive editing tools.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Snapshot",
+   "name": "Camera",
+   "developer": "The GNOME Project",
+   "category": "photo",
+   "summary": "Take pictures and videos",
+   "description": "Camera takes photos and records videos with your webcam or phone camera. It is simple, touch friendly and shows your latest shots in a gallery.",
+   "color": "#00ABA9",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Loupe",
+   "name": "Image Viewer",
+   "developer": "The GNOME Project",
+   "category": "photo",
+   "summary": "View and edit images",
+   "description": "Image Viewer opens your pictures quickly and lets you zoom, rotate and browse through a folder. It supports touch gestures and many image formats.",
+   "color": "#1BA1E2",
+   "featured": false
+  },
+  {
+   "id": "org.blender.Blender",
+   "name": "Blender",
+   "developer": "Blender Foundation",
+   "category": "photo",
+   "summary": "Free and open source 3D creation suite",
+   "description": "Blender covers the whole 3D pipeline: modelling, rigging, animation, simulation, rendering, compositing and video editing. It is used for films, games and art.",
+   "color": "#FA6800",
+   "featured": true
+  },
+  {
+   "id": "org.libreoffice.LibreOffice",
+   "name": "LibreOffice",
+   "developer": "The Document Foundation",
+   "category": "productivity",
+   "summary": "The LibreOffice productivity suite",
+   "description": "LibreOffice is a complete office suite with a word processor, spreadsheet, presentations, drawing and a database. It opens and saves Microsoft Office documents.",
+   "color": "#008A00",
+   "featured": true
+  },
+  {
+   "id": "org.onlyoffice.desktopeditors",
+   "name": "ONLYOFFICE",
+   "developer": "ONLYOFFICE",
+   "category": "productivity",
+   "summary": "Office productivity suite",
+   "description": "ONLYOFFICE Desktop Editors combine text, spreadsheet and presentation editors with high compatibility with Microsoft Office formats. Fill in forms and edit PDF files too.",
+   "color": "#E51400",
+   "featured": false
+  },
+  {
+   "id": "md.obsidian.Obsidian",
+   "name": "Obsidian",
+   "developer": "Obsidian",
+   "category": "productivity",
+   "summary": "Markdown-based knowledge base",
+   "description": "Obsidian is a private and flexible note-taking app. Your notes are plain Markdown files on your device, linked together into a knowledge graph.",
+   "color": "#AA00FF",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.TextEditor",
+   "name": "Text Editor",
+   "developer": "The GNOME Project",
+   "category": "productivity",
+   "summary": "Edit text files",
+   "description": "Text Editor is a simple editor for notes and documents. It restores your session, saves drafts automatically and supports syntax highlighting.",
+   "color": "#1BA1E2",
+   "featured": false
+  },
+  {
+   "id": "com.github.johnfactotum.Foliate",
+   "name": "Foliate",
+   "developer": "John Factotum",
+   "category": "productivity",
+   "summary": "Read e-books in style",
+   "description": "Foliate is a modern e-book reader for EPUB, Mobipocket and other formats. Choose your theme and layout, add notes and look up words while reading.",
+   "color": "#00ABA9",
+   "featured": false
+  },
+  {
+   "id": "org.kde.okular",
+   "name": "Okular",
+   "developer": "KDE",
+   "category": "productivity",
+   "summary": "View and annotate documents",
+   "description": "Okular opens PDF, EPUB, comic books, images and more. Highlight text, add notes and fill in forms on your documents.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Calendar",
+   "name": "Calendar",
+   "developer": "The GNOME Project",
+   "category": "productivity",
+   "summary": "Manage your schedule",
+   "description": "Calendar shows your events by month or week and syncs with your online accounts. Add events quickly and never miss an appointment.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "com.github.xournalpp.xournalpp",
+   "name": "Xournal++",
+   "developer": "Xournalpp Developers",
+   "category": "productivity",
+   "summary": "Take handwritten notes",
+   "description": "Xournal++ is a handwriting notebook with pen and tablet support. Write notes, sketch and annotate PDF files.",
+   "color": "#A20025",
+   "featured": false
+  },
+  {
+   "id": "org.telegram.desktop",
+   "name": "Telegram",
+   "developer": "Telegram FZ-LLC",
+   "category": "social",
+   "summary": "New era of messaging",
+   "description": "Telegram is a fast and secure messaging app that syncs across all your devices. Send messages, photos and files of any type and join groups and channels.",
+   "color": "#1BA1E2",
+   "featured": true
+  },
+  {
+   "id": "com.discordapp.Discord",
+   "name": "Discord",
+   "developer": "Discord Inc.",
+   "category": "social",
+   "summary": "Talk, play, hang out",
+   "description": "Discord is an all-in-one voice, video and text chat app. Join servers for your communities, hang out with friends and stream your games.",
+   "color": "#6A00FF",
+   "featured": false
+  },
+  {
+   "id": "org.signal.Signal",
+   "name": "Signal",
+   "developer": "Signal Foundation",
+   "category": "social",
+   "summary": "Private messenger",
+   "description": "Signal is a messaging app with privacy at its core. Messages and calls are end-to-end encrypted and linked to the Signal app on your phone.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "im.riot.Riot",
+   "name": "Element",
+   "developer": "Element Creations Ltd",
+   "category": "social",
+   "summary": "Secure communications platform",
+   "description": "Element is a secure messenger built on the open Matrix network. Chat with end-to-end encryption, make voice and video calls and bridge to other networks.",
+   "color": "#008A00",
+   "featured": false
+  },
+  {
+   "id": "com.slack.Slack",
+   "name": "Slack",
+   "developer": "Slack Technologies Inc.",
+   "category": "social",
+   "summary": "Business communication",
+   "description": "Slack brings team communication together in channels. Message colleagues, share files and connect the tools you use at work.",
+   "color": "#76608A",
+   "featured": false
+  },
+  {
+   "id": "dev.geopjr.Tuba",
+   "name": "Tuba",
+   "developer": "Evangelos \"GeopJr\" Paterakis",
+   "category": "social",
+   "summary": "Browse the Fediverse",
+   "description": "Tuba is a client for Mastodon and the Fediverse. Read your timelines, post, reply and follow people across the decentralised social web.",
+   "color": "#6A00FF",
+   "featured": false
+  },
+  {
+   "id": "org.mozilla.firefox",
+   "name": "Firefox",
+   "developer": "Mozilla",
+   "category": "internet",
+   "summary": "Fast, private & safe web browser",
+   "description": "Firefox is a fast, private web browser from the non-profit Mozilla. It blocks trackers by default and syncs bookmarks and passwords across your devices.",
+   "color": "#FA6800",
+   "featured": true
+  },
+  {
+   "id": "org.chromium.Chromium",
+   "name": "Chromium",
+   "developer": "The Chromium Authors",
+   "category": "internet",
+   "summary": "The web browser from the Chromium project",
+   "description": "Chromium is the open source browser that Google Chrome is built on. It is fast, stable and supports a large catalogue of extensions.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "com.brave.Browser",
+   "name": "Brave",
+   "developer": "Brave Software",
+   "category": "internet",
+   "summary": "Fast internet, ad blocking built in",
+   "description": "Brave blocks ads and trackers by default to make browsing faster and more private. It is based on Chromium and supports Chrome extensions.",
+   "color": "#E51400",
+   "featured": false
+  },
+  {
+   "id": "org.mozilla.Thunderbird",
+   "name": "Thunderbird",
+   "developer": "MZLA Technologies",
+   "category": "internet",
+   "summary": "Email, newsfeed, chat and calendaring client",
+   "description": "Thunderbird manages all your email accounts in one place. It also handles calendars, contacts, news feeds and chat, and it is free and open source.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "com.transmissionbt.Transmission",
+   "name": "Transmission",
+   "developer": "The Transmission Project",
+   "category": "internet",
+   "summary": "Download and share files over BitTorrent",
+   "description": "Transmission is a simple and lightweight BitTorrent client. It uses few resources and has all the essentials such as magnet links and encryption.",
+   "color": "#A20025",
+   "featured": false
+  },
+  {
+   "id": "org.localsend.localsend_app",
+   "name": "LocalSend",
+   "developer": "Tien Do Nam",
+   "category": "internet",
+   "summary": "Share files to nearby devices",
+   "description": "LocalSend shares files and messages with nearby devices over your local network. It works without an internet connection and across all platforms.",
+   "color": "#00ABA9",
+   "featured": false
+  },
+  {
+   "id": "com.github.tchx84.Flatseal",
+   "name": "Flatseal",
+   "developer": "Martin Abente Lahaye",
+   "category": "tools",
+   "summary": "Manage Flatpak permissions",
+   "description": "Flatseal lets you review and change the permissions of your Flatpak apps. Control access to files, devices and the network for every app.",
+   "color": "#0050EF",
+   "featured": true
+  },
+  {
+   "id": "org.gnome.Calculator",
+   "name": "Calculator",
+   "developer": "The GNOME Project",
+   "category": "tools",
+   "summary": "Arithmetic, scientific or financial calculations",
+   "description": "Calculator solves simple sums as well as scientific and financial calculations. It also converts currencies and units.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Maps",
+   "name": "Maps",
+   "developer": "The GNOME Project",
+   "category": "tools",
+   "summary": "Find places around the world",
+   "description": "Maps lets you search for places, get directions and explore the world with OpenStreetMap data. Plan routes by car, bike, foot or public transport.",
+   "color": "#60A917",
+   "featured": false
+  },
+  {
+   "id": "io.missioncenter.MissionCenter",
+   "name": "Mission Center",
+   "developer": "Mission Center Developers",
+   "category": "tools",
+   "summary": "Monitor system resource usage",
+   "description": "Mission Center shows the usage of your CPU, memory, disks, network and GPU. See which apps and processes use the most resources and stop them.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "org.keepassxc.KeePassXC",
+   "name": "KeePassXC",
+   "developer": "KeePassXC Team",
+   "category": "tools",
+   "summary": "Secure and full-featured password manager",
+   "description": "KeePassXC stores your passwords in an encrypted database that stays on your device. It generates strong passwords and fills them in your browser.",
+   "color": "#60A917",
+   "featured": false
+  },
+  {
+   "id": "com.bitwarden.desktop",
+   "name": "Bitwarden",
+   "developer": "Bitwarden Inc.",
+   "category": "tools",
+   "summary": "A secure and free password manager",
+   "description": "Bitwarden stores your logins and passwords securely and syncs them between your devices. Your vault is end-to-end encrypted.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "com.usebottles.bottles",
+   "name": "Bottles",
+   "developer": "The Bottles Contributors",
+   "category": "tools",
+   "summary": "Run Windows software",
+   "description": "Bottles makes it easy to run Windows programs and games on Linux. It manages Wine environments with ready-made settings for games and software.",
+   "color": "#E51400",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.FileRoller",
+   "name": "File Roller",
+   "developer": "Paolo Bacchilega",
+   "category": "tools",
+   "summary": "Open, modify and create compressed archives",
+   "description": "File Roller opens, creates and extracts archives such as zip, tar and 7z. Browse an archive's contents and add or remove files.",
+   "color": "#F0A30A",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.clocks",
+   "name": "Clocks",
+   "developer": "The GNOME Project",
+   "category": "tools",
+   "summary": "Keep track of time",
+   "description": "Clocks shows the time in cities around the world and has alarms, a stopwatch and timers.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "org.stellarium.Stellarium",
+   "name": "Stellarium",
+   "developer": "Stellarium team",
+   "category": "education",
+   "summary": "Desktop planetarium",
+   "description": "Stellarium shows a realistic sky in 3D, just like what you see with the naked eye, binoculars or a telescope. Explore stars, planets, nebulae and constellations.",
+   "color": "#6A00FF",
+   "featured": true
+  },
+  {
+   "id": "net.ankiweb.Anki",
+   "name": "Anki",
+   "developer": "Damien Elmes",
+   "category": "education",
+   "summary": "Powerful, intelligent flash cards",
+   "description": "Anki makes remembering things easy with spaced repetition flash cards. Study languages, medicine, music or anything else and sync your decks.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "org.geogebra.GeoGebra",
+   "name": "GeoGebra",
+   "developer": "GeoGebra Institute",
+   "category": "education",
+   "summary": "Dynamic mathematics software",
+   "description": "GeoGebra combines geometry, algebra, graphing, statistics and calculus in one easy to use app. Explore mathematics interactively.",
+   "color": "#6A00FF",
+   "featured": false
+  },
+  {
+   "id": "org.kde.gcompris",
+   "name": "GCompris",
+   "developer": "KDE",
+   "category": "education",
+   "summary": "Educational game for children",
+   "description": "GCompris is a suite of more than 100 educational activities for children aged 2 to 10. Learn reading, counting, science, geography and more through play.",
+   "color": "#A4C400",
+   "featured": false
+  },
+  {
+   "id": "org.kde.marble",
+   "name": "Marble",
+   "developer": "KDE",
+   "category": "education",
+   "summary": "Virtual globe",
+   "description": "Marble is a virtual globe and world atlas. Explore maps of the Earth, the Moon and the planets, measure distances and look up places.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "org.tuxpaint.Tuxpaint",
+   "name": "Tux Paint",
+   "developer": "Bill Kendrick, et al.",
+   "category": "education",
+   "summary": "A drawing program for children",
+   "description": "Tux Paint is a drawing program for young children with a playful interface, sound effects and a cartoon mascot. Draw with brushes, stamps and magic tools.",
+   "color": "#F472D0",
+   "featured": false
+  },
+  {
+   "id": "com.vscodium.codium",
+   "name": "VSCodium",
+   "developer": "The VSCodium team",
+   "category": "development",
+   "summary": "Telemetry-less code editing",
+   "description": "VSCodium is a community build of Visual Studio Code without Microsoft branding and telemetry. Edit code in any language with extensions from Open VSX.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "com.visualstudio.code",
+   "name": "Visual Studio Code",
+   "developer": "Microsoft Corporation",
+   "category": "development",
+   "summary": "Code editing. Redefined.",
+   "description": "Visual Studio Code is a lightweight but powerful source code editor. It has IntelliSense, debugging, Git integration and thousands of extensions.",
+   "color": "#0050EF",
+   "featured": true
+  },
+  {
+   "id": "org.gnome.Builder",
+   "name": "Builder",
+   "developer": "Christian Hergert",
+   "category": "development",
+   "summary": "Create applications for GNOME",
+   "description": "Builder is an IDE for creating GNOME applications. It has project templates, Flatpak integration, a debugger and code completion.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "org.godotengine.Godot",
+   "name": "Godot Engine",
+   "developer": "The Godot Engine Community",
+   "category": "development",
+   "summary": "Easily create 2D and 3D games",
+   "description": "Godot is a feature-packed open source game engine. Create 2D and 3D games with a unified interface and export them to many platforms.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "io.github.shiftey.Desktop",
+   "name": "GitHub Desktop",
+   "developer": "shiftkey",
+   "category": "development",
+   "summary": "Simple collaboration from your desktop",
+   "description": "GitHub Desktop makes working with Git repositories simple. Commit, branch, review changes and open pull requests without the command line.",
+   "color": "#AA00FF",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.meld",
+   "name": "Meld",
+   "developer": "Kai Willadsen",
+   "category": "development",
+   "summary": "Compare and merge your files",
+   "description": "Meld compares files and folders side by side and helps you merge changes. It works with Git and other version control systems.",
+   "color": "#6D8764",
+   "featured": false
+  }
+ ]
+}

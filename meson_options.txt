@@ -1,0 +1,4 @@
+option('svg', type: 'feature', value: 'auto',
+  description: 'Render SVG icons of installed applications (needs librsvg)')
+option('notifications', type: 'feature', value: 'auto',
+  description: 'Built-in org.freedesktop.Notifications daemon (needs sd-bus)')

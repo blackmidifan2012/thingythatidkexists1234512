@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Metro (metrowl)
+Comment=Windows Phone style Wayland shell
+Exec=metrowl-session
+Type=Application
+DesktopNames=metrowl

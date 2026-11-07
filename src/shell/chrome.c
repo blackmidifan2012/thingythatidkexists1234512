@@ -98,10 +98,12 @@ void chrome_draw(UI *ui) {
 		}
 		(void)dx; (void)dy;
 		double vx, vy;
-		if (ui_fling(ui, pid, &vx, &vy) && sh.ac_dragging) {
-			bool open = sh.ac_pos > 0.4 || vy > 500;
-			sh.ac_dragging = false;
-			sh.ac_target_open = !open;   /* force the toggle below to act */
+		if (ui_fling(ui, pid, &vx, &vy) && (sh.ac_dragging || ui->p.moved)) {
+			/* judge by the release point: on a slow phone a whole flick can arrive between
+			 * two frames, and bunched-up events make its measured speed unreliable */
+			sh.ac_pos = CLAMP(ui->p.y / (sh.h * 0.45), 0, 1);
+			bool open = sh.ac_pos > 0.2 || vy > 300;
+			sh.ac_dragging = true;   /* makes the toggle animate from where the finger left it */
 			shell_toggle_action_center(open);
 		}
 		if (ui_clicked(ui, pid) && !sh.ac_dragging) {

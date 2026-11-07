@@ -239,14 +239,15 @@ void actioncenter_draw(UI *ui) {
 		if (ui_dragging(ui, hid) && ui->p.moved) {
 			sh.ac_dragging = true;
 			sh.ac_anim.active = false;
-			sh.ac_pos = CLAMP((ui->p.y + (-oy)) / sh.h * 0 + ui->p.y / (sh.h - 22), 0, 1);
+			sh.ac_pos = CLAMP(ui->p.y / (sh.h - 22), 0, 1);
 			ui->redraw = true;
 		}
 		double vx, vy;
-		if (ui_fling(ui, hid, &vx, &vy) && sh.ac_dragging) {
-			bool close = sh.ac_pos < 0.7 || vy < -500;
-			sh.ac_dragging = false;
-			sh.ac_target_open = !close;
+		if (ui_fling(ui, hid, &vx, &vy) && (sh.ac_dragging || ui->p.moved)) {
+			/* a short push up is enough, see the pull-down in chrome.c */
+			sh.ac_pos = CLAMP(ui->p.y / (sh.h - 22), 0, 1);
+			bool close = sh.ac_pos < 0.9 || vy < -300;
+			sh.ac_dragging = true;   /* makes the toggle animate from where the finger left it */
 			shell_toggle_action_center(!close);
 		}
 		if (ui_clicked(ui, hid)) shell_toggle_action_center(false);

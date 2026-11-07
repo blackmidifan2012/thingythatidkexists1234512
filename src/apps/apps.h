@@ -43,7 +43,7 @@ const AppDef *app_get(int i);
 
 extern const AppDef app_settings, app_store, app_photos, app_calculator, app_clock, app_calendar,
 	app_weather, app_people, app_notes, app_files, app_music, app_internet, app_camera,
-	app_video, app_battery, app_storage, app_terminal, app_minesweeper, app_recorder;
+	app_video, app_battery, app_storage, app_terminal, app_minesweeper, app_recorder, app_phone;
 
 /* Full-screen overlay above everything, including the lock screen, used by Alarms &
  * Clock for a ringing alarm or timer. clock_overlay_active() decides whether it is shown;
@@ -106,7 +106,14 @@ cJSON *app_json_load(const char *name);          /* NULL when missing or invalid
 bool app_json_save(const char *name, const cJSON *root);
 
 /* ---- sounds (generated tones played with pw-play / paplay / aplay when available) */
-enum { SND_ALARM, SND_CHIME, SND_TIMER };
+enum { SND_ALARM, SND_CHIME, SND_TIMER, SND_KEY, SND_WARN };
+/* Short event sounds, silent when muted. The notification and warning sounds are the
+ * user's choice (cfg.notif_sound / cfg.warn_sound). */
+enum { EV_KEY, EV_NOTIF, EV_WARN };
+void app_play_event(int ev);
+/* Sound files from installed (open source) sound themes and ~/.local/share/sounds,
+ * sorted by name. The array stays valid until the next call. */
+int app_sound_list(char ***paths);
 void app_sound(int kind, bool loop);
 void app_sound_stop(void);
 

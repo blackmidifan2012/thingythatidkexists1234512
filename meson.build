@@ -115,6 +115,7 @@ shell_src = files(
   'src/apps/store.c',
   'src/apps/photos.c',
   'src/apps/calculator.c',
+  'src/apps/phone.c',
   'src/apps/clock.c',
   'src/apps/calendar.c',
   'src/apps/weather.c',

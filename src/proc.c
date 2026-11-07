@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <signal.h>
+#include <spawn.h>
 #include <sys/eventfd.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -108,10 +109,37 @@ static void child_env(void) {
 	setenv("CLUTTER_BACKEND", "wayland", 0);
 }
 
+/* fork() copies the compositor's page tables, which stalls the main thread for
+ * milliseconds on a phone every time a status poll or a sound runs. posix_spawn
+ * (vfork-like) does not; the fork path below stays as the fallback. */
+static bool spawn_fast(char *const argv[], int out_fd, pid_t *pid) {
+	static bool env_ready;
+	if (!env_ready) { child_env(); env_ready = true; }   /* same variables, set once */
+	posix_spawn_file_actions_t fa;
+	posix_spawnattr_t at;
+	posix_spawn_file_actions_init(&fa);
+	posix_spawn_file_actions_addopen(&fa, 0, "/dev/null", O_RDONLY, 0);
+	posix_spawn_file_actions_adddup2(&fa, out_fd, 1);
+	posix_spawn_file_actions_addopen(&fa, 2, "/dev/null", O_WRONLY, 0);
+	posix_spawnattr_init(&at);
+	sigset_t def, none;
+	sigemptyset(&def);
+	sigaddset(&def, SIGPIPE);
+	sigemptyset(&none);
+	posix_spawnattr_setsigdefault(&at, &def);
+	posix_spawnattr_setsigmask(&at, &none);
+	posix_spawnattr_setflags(&at, POSIX_SPAWN_SETSIGDEF | POSIX_SPAWN_SETSIGMASK);
+	int rc = posix_spawnp(pid, argv[0], &fa, &at, argv, environ);
+	posix_spawnattr_destroy(&at);
+	posix_spawn_file_actions_destroy(&fa);
+	return rc == 0;
+}
+
 bool proc_run(char *const argv[], ProcDone done, void *ud) {
 	int pfd[2];
 	if (pipe2(pfd, O_CLOEXEC) != 0) return false;
-	pid_t pid = fork();
+	pid_t pid;
+	if (!spawn_fast(argv, pfd[1], &pid)) pid = fork();
 	if (pid < 0) { close(pfd[0]); close(pfd[1]); return false; }
 	if (pid == 0) {
 		int nul = open("/dev/null", O_RDWR);

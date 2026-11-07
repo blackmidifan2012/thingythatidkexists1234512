@@ -24,6 +24,7 @@ static const Entry TABLE[] = {
 #include "apps/terminal.tr.inc"
 #include "apps/minesweeper.tr.inc"
 #include "apps/recorder.tr.inc"
+#include "apps/phone.tr.inc"
 };
 
 static Lang g_lang = LANG_EN;

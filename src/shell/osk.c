@@ -1,4 +1,5 @@
 #include "shell.h"
+#include "../apps/apps.h"
 #include "../config.h"
 #include "../i18n.h"
 #include "../util.h"
@@ -11,7 +12,7 @@
  * fields directly, and into Wayland clients through text-input-v3 (which makes
  * ç ş ğ ı ö ü work everywhere) or synthetic key events. */
 
-enum { K_CHAR, K_SHIFT, K_BKSP, K_ENTER, K_SPACE, K_SYM, K_SYM2, K_ABC, K_LANG, K_TEXT };
+enum { K_CHAR, K_SHIFT, K_BKSP, K_ENTER, K_SPACE, K_SYM, K_SYM2, K_ABC, K_LANG, K_TEXT, K_EMOJI };
 
 typedef struct {
 	char label[16];
@@ -22,7 +23,16 @@ typedef struct {
 } Key;
 
 static int g_shift;            /* 0 off, 1 once, 2 caps lock */
-static int g_page;             /* 0 letters, 1 symbols, 2 more symbols */
+static int g_page;             /* 0 letters, 1 symbols, 2 more symbols, 3 emoji */
+static int g_emoji_set;        /* which of the EMOJI pages is shown */
+
+/* single code point emoji only, so utf8_nth() splits them correctly */
+static const char *const EMOJI[][3] = {
+	{"😀😃😄😁😆😅😂🤣😊😇", "🙂🙃😉😌😍🥰😘😗😙😚", "😋😛😜🤪😝🤑🤗🤭🤫🤔"},
+	{"😐😑😶😏😒🙄😬😮😯😲", "😳🥺😦😧😨😰😥😢😭😱", "😖😣😞😓😩😫🥱😤😡😠"},
+	{"👍👎👌🤝🤞🤟🤘🤙👈👉", "👆👇👋🤚👐✋🖖👏🙌🙏", "💪💖💕💔💯💥🔥✨🎉🎂"},
+	{"🐶🐱🐭🐹🐰🦊🐻🐼🐨🐯", "🌞🌙⭐🌈🌸🌹🍀🍎🍕🍔", "⚽🏀🎵🎮📷📱💻🚗🚀🏠"},
+};
 static int g_layout;           /* index into enabled layouts */
 static bool g_ui_wanted;       /* a built-in text field wants the keyboard */
 static int g_ui_flags;
@@ -250,6 +260,18 @@ static int build_rows(Key rows[5][14], int ncols[5]) {
 			if (r == 2) ADD(r, .label = "", .out = "", .type = K_BKSP, .w = 1.5f);
 		}
 		nr = 3;
+	} else if (g_page == 3) {
+		for (int r = 0; r < 3; r++) {
+			const char *row = EMOJI[g_emoji_set][r];
+			int n = utf8_strlen(row);
+			for (int i = 0; i < n; i++) {
+				Key k = {.type = K_CHAR, .w = 1};
+				utf8_nth(row, i, k.label);
+				str_copy(k.out, sizeof k.out, k.label);
+				rows[r][ncols[r]++] = k;
+			}
+		}
+		nr = 3;
 	} else {
 		const char *p1 = g_page == 1 ? "1234567890" : "~`|\\^{}[]<>";
 		const char *p2 = g_page == 1 ? "@#$%&*-+()" : "=_/<>€£¥₺§";
@@ -275,13 +297,25 @@ static int build_rows(Key rows[5][14], int ncols[5]) {
 		nr = 3;
 	}
 	/* bottom row */
+	if (g_page == 3) {
+		char set[16];
+		snprintf(set, sizeof set, "%d/%d", g_emoji_set + 1, (int)ARRAY_LEN(EMOJI));
+		ADD(3, .label = "abc", .out = "", .type = K_ABC, .w = 1.5f);
+		ADD(3, .label = "", .out = "", .type = K_EMOJI, .w = 1.5f);
+		str_copy(rows[3][ncols[3] - 1].label, sizeof rows[3][0].label, set);
+		ADD(3, .label = "", .out = " ", .type = K_SPACE, .w = 4.4f);
+		ADD(3, .label = "", .out = "", .type = K_BKSP, .w = 1.5f);
+		ADD(3, .label = "", .out = "\n", .type = K_ENTER, .w = 1.5f);
+		return 4;
+	}
 	if (g_page == 0) ADD(3, .label = "&123", .out = "", .type = K_SYM, .w = 1.5f);
 	else ADD(3, .label = "abc", .out = "", .type = K_ABC, .w = 1.5f);
+	ADD(3, .label = "", .out = "", .type = K_EMOJI, .w = 1.1f);
 	if (nlay > 1) ADD(3, .label = "", .out = "", .type = K_LANG, .w = 1.1f);
 	if (purpose & TB_EMAIL) ADD(3, .label = "@", .out = "@", .type = K_CHAR, .w = 1.1f);
 	else if (purpose & TB_URL) ADD(3, .label = "/", .out = "/", .type = K_CHAR, .w = 1.1f);
 	else ADD(3, .label = ",", .out = ",", .type = K_CHAR, .w = 1.1f);
-	ADD(3, .label = "", .out = " ", .type = K_SPACE, .w = nlay > 1 ? 3.4f : 4.4f);
+	ADD(3, .label = "", .out = " ", .type = K_SPACE, .w = nlay > 1 ? 2.3f : 3.3f);
 	ADD(3, .label = ".", .out = ".", .type = K_CHAR, .w = 1.1f);
 	if (purpose & TB_URL) ADD(3, .label = ".com", .out = ".com", .type = K_CHAR, .w = 1.5f);
 	ADD(3, .label = "", .out = "\n", .type = K_ENTER, .w = 1.5f);
@@ -460,7 +494,8 @@ void osk_draw(UI *ui, double bottom) {
 			if (k->type == K_SHIFT && g_shift && !pr) fg = th->on_accent;
 			switch (k->type) {
 			case K_CHAR:
-				gfx_text_in(cr, k->label, kr, strlen(k->label) > 3 ? 18 : 24, FW_SEMILIGHT, fg, TA_CENTER, true);
+				gfx_text_in(cr, k->label, kr, strlen(k->label) > 3 && (unsigned char)k->label[0] < 0xF0 ? 18 : 24,
+				            FW_SEMILIGHT, fg, TA_CENTER, true);
 				if (k->alts[0] && g_page == 0 && r == 0) {
 					char dg[8] = "";
 					dg[0] = k->alts[0] >= '0' && k->alts[0] <= '9' ? k->alts[0] : 0;
@@ -475,6 +510,10 @@ void osk_draw(UI *ui, double bottom) {
 				break;
 			}
 			case K_LANG: icon_draw(cr, ICON_GLOBE, rect_cx(kr), rect_cy(kr), 20, fg); break;
+			case K_EMOJI:
+				if (g_page == 3) gfx_text_in(cr, k->label, kr, 17, FW_SEMILIGHT, fg, TA_CENTER, true);
+				else icon_draw(cr, ICON_SMILEY, rect_cx(kr), rect_cy(kr), 21, fg);
+				break;
 			default: gfx_text_in(cr, k->label, kr, 17, FW_SEMILIGHT, fg, TA_CENTER, true); break;
 			}
 
@@ -496,6 +535,7 @@ void osk_draw(UI *ui, double bottom) {
 				g_alt.key = id;
 			}
 			if (clicked || repeat_fire) {
+				app_play_event(EV_KEY);
 				switch (k->type) {
 				case K_CHAR: type_string(k->out); break;
 				case K_SPACE:
@@ -521,6 +561,10 @@ void osk_draw(UI *ui, double bottom) {
 				case K_SYM: g_page = g_page == 0 ? 1 : 1; break;
 				case K_SYM2: g_page = 2; break;
 				case K_ABC: g_page = 0; break;
+				case K_EMOJI:
+					if (g_page == 3) g_emoji_set = (g_emoji_set + 1) % (int)ARRAY_LEN(EMOJI);
+					else g_page = 3;
+					break;
 				case K_LANG: {
 					const char *names[4];
 					int n = enabled_layouts(names, 4);

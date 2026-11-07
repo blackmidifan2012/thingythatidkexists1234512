@@ -200,6 +200,16 @@ static PangoLayout *get_layout(cairo_t *cr, const char *s, double size, int weig
 	return get_ent(cr, s, size, weight, align, max_w, lines)->layout;
 }
 
+/* Emoji are drawn in colour: they cannot go through the single-colour text masks.
+ * U+1F000.. (F0 9F ..) and the U+2600..27BF / U+2B50 symbol blocks. */
+static bool has_color_glyphs(const char *s) {
+	for (const unsigned char *p = (const unsigned char *)s; *p; p++) {
+		if (p[0] == 0xF0 && p[1] == 0x9F) return true;
+		if (p[0] == 0xE2 && ((p[1] >= 0x98 && p[1] <= 0x9E) || p[1] == 0xAD)) return true;
+	}
+	return false;
+}
+
 /* Laying out and rasterising glyphs every frame is a large part of a frame on phone
  * CPUs: render each cached layout once into an alpha mask and stamp that instead. */
 static cairo_surface_t *text_mask(cairo_t *cr, CacheEnt *e, double scale) {
@@ -261,7 +271,8 @@ double gfx_text(cairo_t *cr, const char *s, double x, double y, double size, int
 	dy = round(dy);
 	cairo_matrix_t m;
 	cairo_get_matrix(cr, &m);
-	cairo_surface_t *mask = m.xy == 0 && m.yx == 0 && m.xx > 0 && m.xx == m.yy ? text_mask(cr, e, m.xx) : NULL;
+	cairo_surface_t *mask = m.xy == 0 && m.yx == 0 && m.xx > 0 && m.xx == m.yy && !has_color_glyphs(s)
+	                        ? text_mask(cr, e, m.xx) : NULL;
 	if (mask) {
 		cairo_save(cr);
 		cairo_identity_matrix(cr);

@@ -61,7 +61,7 @@ void shell_activity(void) {
 static const AppDef *const BUILTIN[] = {
 	&app_settings, &app_store, &app_photos, &app_calculator, &app_clock, &app_calendar, &app_weather,
 	&app_people, &app_notes, &app_files, &app_music, &app_internet, &app_camera, &app_search,
-	&app_video, &app_battery, &app_storage, &app_terminal, &app_minesweeper, &app_recorder,
+	&app_video, &app_battery, &app_storage, &app_terminal, &app_minesweeper, &app_recorder, &app_phone,
 };
 
 int app_count(void) { return (int)ARRAY_LEN(BUILTIN); }
@@ -547,6 +547,7 @@ uint32_t shell_notify(const char *app, const char *summary, const char *body, co
 	if (replaces) {
 		for (int i = 0; i < sh.notifs.len; i++) if (sh.notifs.items[i]->id == replaces) n = sh.notifs.items[i];
 	}
+	bool fresh = !n;
 	if (n) {
 		free(n->app_name); free(n->summary); free(n->body); free(n->icon); free(n->desktop_entry);
 	} else {
@@ -570,6 +571,8 @@ uint32_t shell_notify(const char *app, const char *summary, const char *body, co
 		if (!queued) vec_push(&sh.toasts, n);
 		if (sh.toasts.len == 1) n->toast_t0 = 0;
 	}
+	/* updates of an existing notification (progress...) stay silent */
+	if (fresh && !quiet && !internal) app_play_event(EV_NOTIF);
 	shell_invalidate();
 	return n->id;
 }
@@ -938,6 +941,21 @@ static void idle_cb(void *ud) {
 
 void shell_tick_minute(void) { tick_cb(NULL); }
 
+/* Low battery: a warning notification with the warning sound at 15 % and 5 %. */
+static void battery_check(void *ud) {
+	(void)ud;
+	static int warned = 100;
+	Battery b = sys_battery();
+	if (!b.present || b.charging || b.full) { warned = 100; return; }
+	int level = b.pct <= 5 ? 5 : b.pct <= 15 ? 15 : 100;
+	if (level >= warned) return;
+	warned = level;
+	char body[96];
+	snprintf(body, sizeof body, _("%d%% battery remaining. Connect your charger."), b.pct);
+	shell_notify(_("Battery"), _("Battery low"), body, "", "", 2, 0, true);
+	app_play_event(EV_WARN);
+}
+
 void shell_init(void) {
 	memset(&sh, 0, sizeof sh);
 	ui_init(&sh.ui);
@@ -945,6 +963,7 @@ void shell_init(void) {
 	sh.status_h = STATUS_H;
 	sh.nav_h = NAV_H;
 	sh.locked = !srv.opt_nolock;
+	timer_add(30000, true, battery_check, NULL);
 	sh.screen = SCR_HOME;
 	sh.last_input = now_sec();
 	anim_set(&sh.kbd_anim, 0);

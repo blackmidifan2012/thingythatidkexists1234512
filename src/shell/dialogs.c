@@ -19,7 +19,7 @@ static struct {
 	char text[640];
 	char btn[2][64];
 	int nbtn;
-	char *items[24];
+	char *items[96];
 	int n_items;
 	int selected;
 	DialogCb cb;
@@ -70,7 +70,7 @@ void dialog_message(const char *title, const char *text, const char *btn1, const
 
 void dialog_list(const char *title, const char *const *items, int n, int selected, DialogCb cb, void *ud) {
 	begin(D_LIST, title, cb, ud);
-	for (int i = 0; i < n && i < 24; i++) D.items[D.n_items++] = xstrdup(items[i]);
+	for (int i = 0; i < n && i < (int)ARRAY_LEN(D.items); i++) D.items[D.n_items++] = xstrdup(items[i]);
 	D.selected = selected;
 }
 

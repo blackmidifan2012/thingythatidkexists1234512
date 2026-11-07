@@ -3,10 +3,13 @@
 #include "../desktop.h"
 #include "../i18n.h"
 #include "../proc.h"
+#include "../sys.h"
 #include "../util.h"
 
+#include <dirent.h>
 #include <glib.h>
 #include <math.h>
+#include <sys/stat.h>
 
 /* ---------------------------------------------------------------- page nav */
 
@@ -323,19 +326,22 @@ static int g_sound_kind = -1;
 static const char *g_player;
 
 static char *sound_file(int kind) {
-	static const char *names[] = {"alarm.wav", "chime.wav", "timer.wav"};
+	static const char *names[] = {"alarm.wav", "chime.wav", "timer.wav", "key.wav", "warn.wav"};
 	char *dir = xdg_dir("XDG_CACHE_HOME", ".cache", "metrowl");
 	char *path = path_join(dir, names[kind]);
 	free(dir);
 	if (file_exists(path)) return path;
 	/* 16 bit mono PCM tones: a rising two-tone pattern for alarms, a soft chime otherwise */
 	const int rate = 22050;
-	static const struct { double f, start, len; } NOTES[3][6] = {
+	static const struct { double f, start, len; } NOTES[5][6] = {
 		{{880, 0.0, 0.16}, {1175, 0.2, 0.16}, {880, 0.4, 0.16}, {1175, 0.6, 0.16}, {0, 0, 0}},
 		{{1046.5, 0.0, 0.5}, {1568, 0.14, 0.6}, {0, 0, 0}},
 		{{988, 0.0, 0.12}, {988, 0.18, 0.12}, {988, 0.36, 0.12}, {0, 0, 0}},
+		{{1800, 0.0, 0.03}, {0, 0, 0}},                       /* key: a short soft tick */
+		{{784, 0.0, 0.2}, {587, 0.22, 0.34}, {0, 0, 0}},      /* warning: falling two-tone */
 	};
-	double dur = kind == SND_ALARM ? 1.4 : kind == SND_CHIME ? 0.9 : 1.0;
+	double dur = kind == SND_ALARM ? 1.4 : kind == SND_CHIME ? 0.9 : kind == SND_KEY ? 0.04 : kind == SND_WARN ? 0.6 : 1.0;
+	double decay = kind == SND_CHIME ? 6 : kind == SND_KEY ? 140 : 3, attack = kind == SND_KEY ? 0.001 : 0.01;
 	int ns = (int)(dur * rate);
 	size_t bytes = 44 + (size_t)ns * 2;
 	unsigned char *w = xcalloc(1, bytes);
@@ -343,7 +349,7 @@ static char *sound_file(int kind) {
 	for (int k = 0; k < 6 && NOTES[kind][k].f > 0; k++) {
 		int s0 = (int)(NOTES[kind][k].start * rate), sl = (int)(NOTES[kind][k].len * rate);
 		for (int i = 0; i < sl && s0 + i < ns; i++) {
-			double t = (double)i / rate, env = MIN(1.0, t / 0.01) * exp(-t * (kind == SND_CHIME ? 6 : 3));
+			double t = (double)i / rate, env = MIN(1.0, t / attack) * exp(-t * decay) * (kind == SND_KEY ? 0.5 : 1);
 			double v = sin(2 * M_PI * NOTES[kind][k].f * t) * 0.6 + sin(4 * M_PI * NOTES[kind][k].f * t) * 0.15;
 			int s = pcm[s0 + i] + (int)(v * env * 9000);
 			pcm[s0 + i] = (int16_t)CLAMP(s, -32000, 32000);
@@ -364,14 +370,18 @@ static char *sound_file(int kind) {
 
 static void sound_done(int status, char *out, size_t len, void *ud);
 
-static void sound_start(int kind) {
+static bool player_ready(void) {
 	if (!g_player) {
 		static const char *players[] = {"pw-play", "paplay", "aplay"};
 		for (size_t i = 0; i < ARRAY_LEN(players) && !g_player; i++)
 			if (proc_exists(players[i])) g_player = players[i];
 		if (!g_player) g_player = "";
 	}
-	if (!*g_player) return;
+	return *g_player;
+}
+
+static void sound_start(int kind) {
+	if (!player_ready()) return;
 	char *path = sound_file(kind);
 	char *argv[] = {(char *)g_player, str_eq(g_player, "aplay") ? "-q" : path, str_eq(g_player, "aplay") ? path : NULL, NULL};
 	if (!proc_run(argv, sound_done, NULL)) g_sound_loop = false;
@@ -390,6 +400,66 @@ void app_sound(int kind, bool loop) {
 }
 
 void app_sound_stop(void) { g_sound_loop = false; }
+
+/* Event sounds play independently of the (looping) alarm sound above. */
+static int g_events_playing;
+
+static void event_done(int status, char *out, size_t len, void *ud) {
+	(void)status; (void)out; (void)len; (void)ud;
+	g_events_playing--;
+}
+
+void app_play_event(int ev) {
+	if (!sys_has_audio() || sys_muted()) return;
+	/* one key click at a time: fast typing must never queue up players */
+	if (ev == EV_KEY && (!cfg.key_sound || g_events_playing > 0)) return;
+	const char *choice = ev == EV_NOTIF ? cfg.notif_sound : ev == EV_WARN ? cfg.warn_sound : "";
+	if (str_eq(choice, "none") || !player_ready()) return;
+	char *path = NULL;
+	/* aplay only plays WAV: fall back to the built-in sound for other formats */
+	if (*choice && file_exists(choice) && (!str_eq(g_player, "aplay") || str_ends(choice, ".wav"))) path = xstrdup(choice);
+	else path = sound_file(ev == EV_KEY ? SND_KEY : ev == EV_WARN ? SND_WARN : SND_CHIME);
+	char *argv[] = {(char *)g_player, str_eq(g_player, "aplay") ? "-q" : path, str_eq(g_player, "aplay") ? path : NULL, NULL};
+	if (proc_run(argv, event_done, NULL)) g_events_playing++;
+	free(path);
+}
+
+static bool is_sound_name(const char *n) {
+	return str_ends(n, ".oga") || str_ends(n, ".ogg") || str_ends(n, ".wav") || str_ends(n, ".flac");
+}
+
+static void sound_scan(void *v, const char *dir, int depth) {
+	VEC(char *) *list = v;
+	DIR *d = opendir(dir);
+	if (!d) return;
+	struct dirent *e;
+	while ((e = readdir(d)) && list->len < 300) {
+		if (e->d_name[0] == '.') continue;
+		char *p = path_join(dir, e->d_name);
+		struct stat st;
+		if (stat(p, &st) == 0 && S_ISDIR(st.st_mode)) { if (depth < 3) sound_scan(list, p, depth + 1); }
+		else if (S_ISREG(st.st_mode) && is_sound_name(e->d_name)) { vec_push(list, p); p = NULL; }
+		free(p);
+	}
+	closedir(d);
+}
+
+static int sound_cmp(const void *a, const void *b) {
+	return strcmp(path_basename(*(char *const *)a), path_basename(*(char *const *)b));
+}
+
+int app_sound_list(char ***paths) {
+	static VEC(char *) list;
+	for (int i = 0; i < list.len; i++) free(list.items[i]);
+	list.len = 0;
+	char *user = xdg_dir("XDG_DATA_HOME", ".local/share", "sounds");
+	const char *dirs[] = {"/usr/share/sounds", "/usr/local/share/sounds", user};
+	for (size_t i = 0; i < ARRAY_LEN(dirs); i++) sound_scan(&list, dirs[i], 0);
+	free(user);
+	if (list.len) qsort(list.items, (size_t)list.len, sizeof(char *), sound_cmp);
+	*paths = list.items;
+	return list.len;
+}
 
 /* ------------------------------------------------------------ image cache - */
 

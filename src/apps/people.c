@@ -1357,6 +1357,7 @@ static void open_scheme(const char *scheme, const char *v) {
 	for (const char *p = v; *p && n + 1 < sizeof clean; p++)
 		if (isdigit((unsigned char)*p) || *p == '+' || *p == '*' || *p == '#') clean[n++] = *p;
 	clean[n] = 0;
+	if (str_eq(scheme, "tel")) { shell_open_builtin("phone", clean); return; }   /* built-in dialer */
 	char *u = xasprintf("%s:%s", scheme, clean);
 	open_uri(u);
 	free(u);

@@ -27,6 +27,7 @@ static void set_defaults(void) {
 	cfg.animations = true;
 	cfg.celsius = true;
 	cfg.nav_autohide = true;
+	cfg.key_sound = true;
 	str_copy(cfg.icon_mode, sizeof cfg.icon_mode, "auto");
 }
 
@@ -60,6 +61,9 @@ static void load_fields(void) {
 	GET_STR("kb_layout", kb_layout);
 	GET_STR("osk_layouts", osk_layouts);
 	GET_BOOL("osk_suggest", osk_suggest);
+	GET_BOOL("key_sound", key_sound);
+	GET_STR("notif_sound", notif_sound);
+	GET_STR("warn_sound", warn_sound);
 	GET_BOOL("osk_autocap", osk_autocap);
 	GET_BOOL("toasts", toasts);
 	GET_BOOL("quiet_hours", quiet_hours);
@@ -106,6 +110,9 @@ static void store_fields(void) {
 	PUT_S("kb_layout", kb_layout);
 	PUT_S("osk_layouts", osk_layouts);
 	PUT_BOOL("osk_suggest", osk_suggest);
+	PUT_BOOL("key_sound", key_sound);
+	PUT_S("notif_sound", notif_sound);
+	PUT_S("warn_sound", warn_sound);
 	PUT_BOOL("osk_autocap", osk_autocap);
 	PUT_BOOL("toasts", toasts);
 	PUT_BOOL("quiet_hours", quiet_hours);

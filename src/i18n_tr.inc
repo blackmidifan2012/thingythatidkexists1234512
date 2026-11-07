@@ -91,3 +91,5 @@
 	{"Camera", "Kamera"},
 	{"No app installed for this. Get one from the Store.", "Bunun için yüklü uygulama yok. Mağaza'dan edinin."},
 	{"No web browser installed. Get one from the Store.", "Yüklü web tarayıcısı yok. Mağaza'dan edinin."},
+	{"%d%% battery remaining. Connect your charger.", "%%%d pil kaldı. Şarj cihazınızı takın."},
+	{"Battery low", "Pil zayıf"},

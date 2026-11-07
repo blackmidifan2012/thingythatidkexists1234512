@@ -804,6 +804,49 @@ static void page_accent(Pg *p) {
 	p->y += ((ACCENT_COUNT + cols - 1) / cols) * (cell + gap);
 }
 
+/* sound pickers: "none", "default", then the installed sound files */
+static int g_snd_ev;
+static char **g_snd_paths;
+static int g_snd_n;
+
+static void sound_label(const char *path, char *out, size_t cap) {
+	str_copy(out, cap, path_basename(path));
+	char *dot = strrchr(out, '.');
+	if (dot) *dot = 0;
+	for (char *c = out; *c; c++) if (*c == '-' || *c == '_') *c = ' ';
+}
+
+static void sound_pick_cb(int i, void *ud) {
+	char *dst = g_snd_ev == EV_NOTIF ? cfg.notif_sound : cfg.warn_sound;
+	if (i == 0) str_copy(dst, sizeof cfg.notif_sound, "none");
+	else if (i == 1) dst[0] = 0;
+	else if (i >= 2 && i - 2 < g_snd_n) str_copy(dst, sizeof cfg.notif_sound, g_snd_paths[i - 2]);
+	else return;
+	config_save_soon();
+	app_play_event(g_snd_ev);   /* let the user hear the choice */
+}
+
+static void sound_combo(Pg *p, const char *key, const char *label, const char *value, int ev) {
+	char cur[128];
+	if (str_eq(value, "none")) str_copy(cur, sizeof cur, _("none"));
+	else if (!*value) str_copy(cur, sizeof cur, _("default"));
+	else sound_label(value, cur, sizeof cur);
+	if (!pg_combo(p, key, label, cur, NULL)) return;
+	g_snd_ev = ev;
+	g_snd_n = app_sound_list(&g_snd_paths);
+	static char labels[96][96];
+	static const char *items[96];
+	int n = 0, sel = str_eq(value, "none") ? 0 : !*value ? 1 : -1;
+	items[n++] = _("none");
+	items[n++] = _("default");
+	for (int i = 0; i < g_snd_n && n < 96; i++, n++) {
+		sound_label(g_snd_paths[i], labels[n], sizeof labels[n]);
+		items[n] = labels[n];
+		if (str_eq(value, g_snd_paths[i])) sel = n;
+	}
+	dialog_list(label, items, n, sel, sound_pick_cb, NULL);
+}
+
 static void page_sounds(Pg *p) {
 	if (!sys_has_audio()) {
 		pg_text(p, _("No sound system was found. Install PipeWire (wpctl), PulseAudio (pactl) or ALSA (amixer) to control the volume."));
@@ -820,6 +863,10 @@ static void page_sounds(Pg *p) {
 	if (pg_toggle(p, "set-mute", _("Mute"), &m)) sys_set_mute(m);
 	pg_text(p, _("When muted, apps and notifications don't play sounds. Alarms still ring."));
 	if (pg_button(p, "set-snd-test", _("play a sound"), !m)) app_sound(SND_CHIME, false);
+	sound_combo(p, "set-snd-notif", _("Notification sound"), cfg.notif_sound, EV_NOTIF);
+	sound_combo(p, "set-snd-warn", _("Warning sound"), cfg.warn_sound, EV_WARN);
+	if (pg_toggle(p, "set-snd-key", _("Key press sounds"), &cfg.key_sound)) config_save_soon();
+	pg_text(p, _("Sounds come from the sound themes installed on the phone (for example sound-theme-freedesktop) and from ~/.local/share/sounds."));
 }
 
 static void page_notif(Pg *p) {

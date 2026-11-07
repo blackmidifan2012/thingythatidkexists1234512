@@ -384,14 +384,20 @@ void shell_back(void) {
 		break;
 	case SCR_APP:
 		if (sh.cur_app && sh.cur_app->back && sh.cur_app->back()) { shell_invalidate(); return; }
-		shell_go_home();
+		/* like Windows Phone: back on an app's first page closes it */
+		if (sh.cur_app) shell_close_app(sh.cur_app);
+		else shell_go_home();
 		break;
 	case SCR_SWITCHER:
 		shell_go_home();
 		break;
-	case SCR_EXT:
+	case SCR_EXT: {
+		/* ask politely, so the app can still offer to save its work */
+		View *v = sh.cur_view;
 		shell_go_home();
+		view_close(v);
 		break;
+	}
 	default:
 		break;
 	}

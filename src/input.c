@@ -272,7 +272,10 @@ static void keyboard_key(struct wl_listener *l, void *data) {
 	bool pressed = ev->state == WL_KEYBOARD_KEY_STATE_PRESSED;
 	uint32_t mods = wlr_keyboard_get_modifiers(k->kb);
 	input_notify_activity();
+	bool was_off = sh.screen_off;
 	if (sh.screen_off && pressed) { shell_wake(); }   /* wake */
+	/* the power key press that woke the screen must not also blank it again */
+	if (was_off && pressed && ns > 0 && (syms[0] == XKB_KEY_XF86PowerOff || syms[0] == XKB_KEY_XF86Sleep)) return;
 
 	bool handled = false;
 	for (int i = 0; i < ns && !handled; i++) handled = handle_hotkeys(syms[i], pressed, mods);

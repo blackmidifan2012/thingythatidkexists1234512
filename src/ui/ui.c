@@ -1226,7 +1226,8 @@ void ui_draw_turnstile(cairo_t *cr, cairo_surface_t *snap, double sw, double sh,
 	double th = angle_deg * M_PI / 180.0;
 	double cam = sw * 2.2;                  /* camera distance */
 	double ch = sh / 2;                     /* vertical centre of the perspective */
-	const double step = 3.0;
+	/* each strip is a separately scaled blit: ~120 of them look the same as 3px ones mid-swing */
+	const double step = MAX(4.0, sw / 120.0);
 	cairo_pattern_t *pat = cairo_pattern_create_for_surface(snap);
 	cairo_pattern_set_filter(pat, CAIRO_FILTER_BILINEAR);
 	double dpx = 0, dpy = 0;

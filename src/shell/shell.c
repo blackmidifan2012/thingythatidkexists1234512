@@ -384,20 +384,15 @@ void shell_back(void) {
 		break;
 	case SCR_APP:
 		if (sh.cur_app && sh.cur_app->back && sh.cur_app->back()) { shell_invalidate(); return; }
-		/* like Windows Phone: back on an app's first page closes it */
-		if (sh.cur_app) shell_close_app(sh.cur_app);
-		else shell_go_home();
+		/* like Windows Phone: back on an app's first page leaves it, still running */
+		shell_go_home();
 		break;
 	case SCR_SWITCHER:
 		shell_go_home();
 		break;
-	case SCR_EXT: {
-		/* ask politely, so the app can still offer to save its work */
-		View *v = sh.cur_view;
+	case SCR_EXT:
 		shell_go_home();
-		view_close(v);
 		break;
-	}
 	default:
 		break;
 	}
@@ -884,7 +879,9 @@ bool shell_render(double now) {
 	ui->layer = UL_BASE;
 	ui->blocked = (trn.phase != TR_NONE) || lock_covering;
 	bool in_transition = trn.phase != TR_NONE;
-	if (!ext_visible) draw_base(ui);
+	/* a fully open action centre is opaque and covers everything below it */
+	bool covered = sh.ac_pos >= 0.999 && !sh.ac_dragging && trn.phase == TR_NONE;
+	if (!ext_visible && !covered) draw_base(ui);
 	/* the frame that ends a transition was drawn with input blocked: draw one more so the
 	 * page registers its hit areas, otherwise the first tap after opening an app is lost */
 	if (in_transition && trn.phase == TR_NONE) ui->redraw = true;

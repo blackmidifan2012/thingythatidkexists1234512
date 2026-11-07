@@ -51,8 +51,9 @@ typedef struct Output {
 	struct wlr_scene_output *scene_output;
 	struct wl_listener frame, request_state, destroy;
 	int pw, ph;                        /* physical pixels */
-	double scale;
-	int lw, lh;                        /* logical size = pw/scale */
+	double scale;                      /* wlroots output scale: Linux apps' pixels per layout px */
+	double ui_scale;                   /* the shell's pixels per dp, see output_apply_scale() */
+	int lw, lh;                        /* logical (layout) size = pw/scale */
 	bool blanked;
 } Output;
 
@@ -128,6 +129,7 @@ bool uilayer_visible(const UiLayer *l);
 void output_init_primary(struct wlr_output *wlr);
 void output_set_blanked(bool blank);
 void output_reapply_scale(void);
+double output_layout_per_dp(void);                /* layout px (apps, cursor) per shell dp */
 void output_request_capture(void (*cb)(cairo_surface_t *surf, void *ud), void *ud);
 extern UiLayer *g_layer_base, *g_layer_overlay;
 

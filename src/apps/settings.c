@@ -1054,6 +1054,8 @@ static void page_display(Pg *p) {
 	if (pg_combo(p, "set-d-scale", _("Display scale"), items[si], NULL))
 		dialog_list(_("Display scale"), items, (int)ARRAY_LEN(SCALES), si, scale_cb, NULL);
 	pg_text(p, _("Makes everything on the screen bigger or smaller. Automatic picks a size that suits the screen."));
+	if (pg_toggle(p, "set-d-apps", _("Phone-size Linux apps"), &cfg.phone_apps)) apply_soon();
+	pg_text(p, _("Shows GNOME, KDE and other Linux apps at the size they are made for on phones, so they use their phone layouts. Turn off to fit more into them."));
 }
 
 static void page_datetime(Pg *p) {

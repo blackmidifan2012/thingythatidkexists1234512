@@ -31,7 +31,12 @@ static int g_cols, g_ucols;
 static double g_margin = 12, g_gap = 6, g_unit;
 
 /* feather animation */
-static struct { int mode; double t0; int origin; } g_anim;   /* mode 0 none, 1 leave, 2 enter */
+static struct {
+	int mode;            /* 0 none, 1 leave, 2 enter, 3 left (hidden) */
+	double t0;
+	int origin;
+	bool drawn;          /* the tiles snapshot for this animation is ready */
+} g_anim;
 
 static const struct { const char *key; TileSize size; } DEFAULTS[] = {
 	{"b:weather", TILE_WIDE}, {"b:clock", TILE_MEDIUM},
@@ -310,12 +315,14 @@ bool start_tile_info(int i, char *key, size_t cap, Rect *r) {
 void start_leave_anim(Rect origin) {
 	g_anim.mode = 1;
 	g_anim.t0 = now_sec();
+	g_anim.drawn = false;
 }
 
 void start_enter_anim(void) {
 	g_anim.mode = 2;
 	g_anim.t0 = now_sec();
 	g_anim.origin = -1;
+	g_anim.drawn = false;
 }
 
 static double tile_delay(int i) {
@@ -375,20 +382,16 @@ void start_draw(UI *ui, Rect area, double xoff) {
 		/* offscreen copy of the tiles in pixel space */
 		/* the tiles do not change while they swing: draw them once per animation */
 		static cairo_surface_t *snap;
-		static double snap_t0;
 		if (snap && (cairo_image_surface_get_width(snap) != sh.pw || cairo_image_surface_get_height(snap) != sh.ph)) {
 			cairo_surface_destroy(snap);
 			snap = NULL;
 		}
-		if (!snap || snap_t0 != g_anim.t0) {
-			if (!snap) snap = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, sh.pw, sh.ph);
-			snap_t0 = g_anim.t0;
+		if (!snap || !g_anim.drawn) {
+			/* opaque, on the page background: each strip of a swinging tile is a plain copy */
+			if (!snap) snap = cairo_image_surface_create(CAIRO_FORMAT_RGB24, sh.pw, sh.ph);
 			cairo_surface_t *s = snap;
 			cairo_t *c2 = cairo_create(s);
-			cairo_set_operator(c2, CAIRO_OPERATOR_SOURCE);
-			cairo_set_source_rgba(c2, 0, 0, 0, 0);
-			cairo_paint(c2);
-			cairo_set_operator(c2, CAIRO_OPERATOR_OVER);
+			gfx_fill_rect(c2, R(0, 0, sh.pw, sh.ph), ui->th.bg);
 			cairo_scale(c2, sh.scale, sh.scale);
 			cairo_translate(c2, 0, area.y);
 			cairo_t *saved = ui->cr;
@@ -399,6 +402,11 @@ void start_draw(UI *ui, Rect area, double xoff) {
 			cairo_destroy(c2);
 			cairo_surface_flush(s);
 			(void)arg;
+			/* that can take a few frame times on a phone: start the swing once it is done,
+			 * otherwise its first part is skipped */
+			g_anim.drawn = true;
+			g_anim.t0 = now_sec();
+			t = 0;
 		}
 		cairo_save(cr);
 		cairo_translate(cr, 0, -area.y);   /* back to screen space for turnstile drawing */

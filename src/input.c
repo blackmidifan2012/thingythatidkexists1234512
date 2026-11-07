@@ -396,8 +396,15 @@ static void shape_request(struct wl_listener *l, void *data) {
 		wlr_cursor_set_xcursor(srv.cursor, srv.xcursor, wlr_cursor_shape_v1_name(ev->shape));
 }
 
-/* Finds the layout (dp) coordinates of the cursor. */
-static void cursor_pos(double *x, double *y) { *x = srv.cursor->x; *y = srv.cursor->y; }
+/* The shell works in dp, wlroots' layout in the apps' (bigger) pixels, see output.c. */
+static void layout_to_dp(double lx, double ly, double *x, double *y) {
+	double k = output_layout_per_dp();
+	*x = lx / k;
+	*y = ly / k;
+}
+
+/* Finds the cursor position in dp. */
+static void cursor_pos(double *x, double *y) { layout_to_dp(srv.cursor->x, srv.cursor->y, x, y); }
 
 static void pointer_to_client(uint32_t time) {
 	double sx, sy;
@@ -493,7 +500,7 @@ static void on_cursor_frame(struct wl_listener *l, void *data) {
 
 /* ---- touch */
 
-static double g_touch_x[16], g_touch_y[16];      /* last position of each touch (layout dp) */
+static double g_touch_x[16], g_touch_y[16];      /* last position of each touch (shell dp) */
 static double g_touch_ox[16], g_touch_oy[16];    /* layout origin of the surface a client touch started on */
 
 static void touch_coords(struct wlr_touch *touch, double nx, double ny, double *lx, double *ly) {
@@ -504,17 +511,18 @@ static void on_touch_down(struct wl_listener *l, void *data) {
 	struct wlr_touch_down_event *ev = data;
 	input_notify_activity();
 	input_show_cursor(false);
-	double lx, ly;
+	double lx, ly, x, y;
 	touch_coords(ev->touch, ev->x, ev->y, &lx, &ly);
+	layout_to_dp(lx, ly, &x, &y);
 	int id = ev->touch_id & 15;
-	g_touch_x[id] = lx;
-	g_touch_y[id] = ly;
+	g_touch_x[id] = x;
+	g_touch_y[id] = y;
 	if (sh.screen_off) { shell_wake(); g_touch_target[id] = T_NONE; return; }
-	if (shell_wants_pointer(lx, ly)) {
+	if (shell_wants_pointer(x, y)) {
 		if (g_shell_touch_id < 0) {
 			g_shell_touch_id = id;
 			g_touch_target[id] = T_SHELL;
-			shell_pointer(0, lx, ly, 0);
+			shell_pointer(0, x, y, 0);
 		} else {
 			g_touch_target[id] = T_NONE;
 		}
@@ -536,13 +544,14 @@ static void on_touch_down(struct wl_listener *l, void *data) {
 static void on_touch_motion(struct wl_listener *l, void *data) {
 	struct wlr_touch_motion_event *ev = data;
 	input_notify_activity();
-	double lx, ly;
+	double lx, ly, x, y;
 	touch_coords(ev->touch, ev->x, ev->y, &lx, &ly);
+	layout_to_dp(lx, ly, &x, &y);
 	int id = ev->touch_id & 15;
-	g_touch_x[id] = lx;
-	g_touch_y[id] = ly;
+	g_touch_x[id] = x;
+	g_touch_y[id] = y;
 	if (g_touch_target[id] == T_SHELL)
-		shell_pointer(1, lx, ly, 0);
+		shell_pointer(1, x, y, 0);
 	else if (g_touch_target[id] == T_CLIENT)
 		wlr_seat_touch_notify_motion(srv.seat, ev->time_msec, ev->touch_id, lx - g_touch_ox[id], ly - g_touch_oy[id]);
 }
@@ -584,7 +593,8 @@ void input_sim_pointer(int type, double x, double y) {
 			shell_pointer(0, x, y, 0);
 		} else {
 			g_mouse_target = T_CLIENT;
-			wlr_cursor_warp_closest(srv.cursor, NULL, x, y);
+			double k = output_layout_per_dp();
+			wlr_cursor_warp_closest(srv.cursor, NULL, x * k, y * k);
 			pointer_to_client(now_msec());
 			wlr_seat_pointer_notify_button(srv.seat, now_msec(), BTN_LEFT, WL_POINTER_BUTTON_STATE_PRESSED);
 			wlr_seat_pointer_notify_frame(srv.seat);
@@ -592,7 +602,8 @@ void input_sim_pointer(int type, double x, double y) {
 	} else if (type == 1) {
 		if (g_mouse_target == T_SHELL) shell_pointer(1, x, y, 0);
 		else if (g_mouse_target == T_CLIENT) {
-			wlr_cursor_warp_closest(srv.cursor, NULL, x, y);
+			double k = output_layout_per_dp();
+			wlr_cursor_warp_closest(srv.cursor, NULL, x * k, y * k);
 			pointer_to_client(now_msec());
 			wlr_seat_pointer_notify_frame(srv.seat);
 		}

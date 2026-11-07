@@ -76,25 +76,36 @@ static bool view_is_descendant_of(const View *v, const View *root) {
 	return false;
 }
 
+/* The shell's area for apps, converted from dp to layout pixels (apps use a bigger scale
+ * than the shell, see output.c). */
+static struct wlr_box ext_box(bool fullscreen) {
+	Rect a = shell_ext_rect(fullscreen);
+	double k = output_layout_per_dp();
+	int x0 = (int)lround(a.x * k), y0 = (int)lround(a.y * k);
+	int x1 = (int)lround((a.x + a.w) * k), y1 = (int)lround((a.y + a.h) * k);
+	if (srv.out) { x1 = MIN(x1, srv.out->lw); y1 = MIN(y1, srv.out->lh); }
+	return (struct wlr_box){x0, y0, x1 - x0, y1 - y0};
+}
+
 static void view_place(View *v) {
 	if (!v->mapped && !v->xdg->base->initialized) return;
 	struct wlr_box geo;
 	wlr_xdg_surface_get_geometry(v->xdg->base, &geo);
 	bool fs = v->fullscreen && v == g_fg;
-	Rect a = shell_ext_rect(fs);
+	struct wlr_box a = ext_box(fs);
 	if (v->is_dialog && v->parent) {
-		int x = (int)(a.x + (a.w - geo.width) / 2), y = (int)(a.y + (a.h - geo.height) / 2);
+		int x = a.x + (a.width - geo.width) / 2, y = a.y + (a.height - geo.height) / 2;
 		wlr_scene_node_set_position(&v->tree->node, x - geo.x, y - geo.y);
 		return;
 	}
-	wlr_scene_node_set_position(&v->tree->node, (int)a.x - geo.x, (int)a.y - geo.y);
+	wlr_scene_node_set_position(&v->tree->node, a.x - geo.x, a.y - geo.y);
 }
 
 static void view_configure(View *v) {
 	if (v->is_dialog || !v->xdg->base->initialized) return;
 	bool fs = v->fullscreen && v == g_fg;
-	Rect a = shell_ext_rect(fs);
-	int w = (int)a.w, h = (int)a.h;
+	struct wlr_box a = ext_box(fs);
+	int w = a.width, h = a.height;
 	if (w != v->last_w || h != v->last_h || fs != (bool)v->xdg->current.fullscreen) {
 		wlr_xdg_toplevel_set_size(v->xdg, w, h);
 		wlr_xdg_toplevel_set_maximized(v->xdg, !fs);
@@ -209,14 +220,14 @@ static void view_commit(struct wl_listener *l, void *data) {
 	View *v = wl_container_of(l, v, commit);
 	if (v->xdg->base->initial_commit) {
 		if (v->deco) wlr_xdg_toplevel_decoration_v1_set_mode(v->deco, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-		Rect a = shell_ext_rect(false);
+		struct wlr_box a = ext_box(false);
 		if (!v->is_dialog && v->xdg->parent == NULL) {
-			wlr_xdg_toplevel_set_size(v->xdg, (int)a.w, (int)a.h);
+			wlr_xdg_toplevel_set_size(v->xdg, a.width, a.height);
 			wlr_xdg_toplevel_set_maximized(v->xdg, true);
 			wlr_xdg_toplevel_set_tiled(v->xdg, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT | WLR_EDGE_RIGHT);
-			wlr_xdg_toplevel_set_bounds(v->xdg, (int)a.w, (int)a.h);
-			v->last_w = (int)a.w;
-			v->last_h = (int)a.h;
+			wlr_xdg_toplevel_set_bounds(v->xdg, a.width, a.height);
+			v->last_w = a.width;
+			v->last_h = a.height;
 		} else {
 			wlr_xdg_toplevel_set_size(v->xdg, 0, 0);
 		}

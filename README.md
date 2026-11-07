@@ -46,12 +46,19 @@ from a TTY with `metrowl` (DRM + libinput backends; not yet tested on the real d
 
 ## Linux apps
 
-Any Wayland app runs full screen between the status and navigation bars. Tested with
-Firefox 159 (opens from the Internet tile as the default browser, shows in the task
-switcher). Firefox's minimum window width is a little wider than a 480 dp phone page; on
-phones set `layout.css.devPixelsPerPx` to `0.8` in `about:config` (or use a mobile
-Firefox config such as postmarketOS's). Third-party apps keep their own coloured icons;
-Settings > start+theme > "Monochrome app icons" draws them as white silhouettes instead.
+Any Wayland app runs full screen between the status and navigation bars, at the size apps
+are made for on phones: a page 360 px wide, as on GNOME (Phosh) and Plasma Mobile phones,
+instead of the denser 480 dp Metro page. That way adaptive GNOME (libadwaita) and KDE
+(Kirigami) apps pick their phone layouts and finger sized controls. Settings > display >
+"Phone-size Linux apps" turns this off. Apps without a phone layout stay as wide as on the
+desktop and are cut off at the right edge.
+
+Tested with GNOME Calculator, Clocks and Text Editor 46, and Firefox 159 (opens from the
+Internet tile as the default browser, shows in the task switcher). Desktop Firefox is wider
+than a phone page: use a mobile Firefox config such as postmarketOS's, or lower
+`layout.css.devPixelsPerPx` in `about:config` (to about `0.6`). Third-party apps keep their
+own coloured icons; Settings > start+theme > "Monochrome app icons" draws them as white
+silhouettes instead.
 
 ## Fonts and icons (for the real Windows Phone look)
 

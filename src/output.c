@@ -180,19 +180,32 @@ static void output_update(Output *o) {
 	o->pw = tw;
 	o->ph = th;
 	o->scale = w->scale;
+	if (o->ui_scale <= 0) o->ui_scale = o->scale;
 	wlr_output_effective_resolution(w, &o->lw, &o->lh);
 	if (g_layer_base) {
 		uilayer_resize(g_layer_base, o->pw, o->ph, o->scale);
 		uilayer_resize(g_layer_overlay, o->pw, o->ph, o->scale);
 	}
-	shell_set_output(o->pw, o->ph, o->scale);
+	shell_set_output(o->pw, o->ph, o->ui_scale);
 	views_relayout();
 }
 
+/* Linux apps are made for phones about 360 px wide (GNOME and Plasma Mobile phones,
+ * Android's 360 dp), while the Metro page is 480 dp across the same glass. At the shell's
+ * scale they come out desktop sized and many pick their desktop layouts, so they get a
+ * 4/3 bigger scale: the wlroots output scale is theirs, the shell keeps its own. */
+#define PHONE_APP_SCALE (4.0 / 3.0)
+
 static void output_apply_scale(Output *o, struct wlr_output_state *st, int pw, int ph) {
 	double want = srv.opt_scale > 0 ? srv.opt_scale : cfg.ui_scale > 0 ? cfg.ui_scale : auto_scale(o->wlr, pw, ph);
-	float s = pick_scale(pw, ph, want);
+	o->ui_scale = pick_scale(pw, ph, want);
+	float s = cfg.phone_apps ? pick_scale(pw, ph, o->ui_scale * PHONE_APP_SCALE) : (float)o->ui_scale;
 	wlr_output_state_set_scale(st, s);
+}
+
+double output_layout_per_dp(void) {
+	Output *o = srv.out;
+	return o && o->ui_scale > 0 && o->scale > 0 ? o->ui_scale / o->scale : 1.0;
 }
 
 static void output_frame_cb(struct wl_listener *l, void *data);
@@ -357,7 +370,8 @@ void output_init_primary(struct wlr_output *wlr) {
 	g_layer_base = uilayer_create(srv.t_base);
 	g_layer_overlay = uilayer_create(srv.t_overlay);
 	output_update(o);
-	LOGI("output %s: %dx%d px, scale %.3f, logical %dx%d dp", wlr->name, o->pw, o->ph, o->scale, o->lw, o->lh);
+	LOGI("output %s: %dx%d px, shell %.3f (%.0fx%.0f dp), apps %.3f (%dx%d px)", wlr->name, o->pw, o->ph,
+	     o->ui_scale, sh.w, sh.h, o->scale, o->lw, o->lh);
 	wlr_output_schedule_frame(wlr);
 }
 

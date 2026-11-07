@@ -4,6 +4,7 @@
 
 #include <math.h>
 #include <pango/pangocairo.h>
+#include <pixman.h>
 
 /* ------------------------------------------------------------------ theme */
 
@@ -1220,20 +1221,66 @@ double ui_pivot_headers(UI *ui, UiId id, Pager *pg, const char *const *titles, i
 
 /* ------------------------------------------------------------ turnstile --- */
 
+/* The page is cut into vertical strips, each a scaled blit with its own perspective
+ * height. When cr draws into an image in pixel space the strips go straight to pixman:
+ * through cairo every strip cost a save, a clip and a new source image, which was most
+ * of a turnstile frame. Nearest sampling halves what is left (mid-swing it looks the
+ * same as bilinear), and an opaque (RGB24) snapshot turns each strip into a plain copy. */
 void ui_draw_turnstile(cairo_t *cr, cairo_surface_t *snap, double sw, double sh, Rect region,
                        double angle_deg, double pivot_x, double alpha) {
 	if (!snap) return;
 	double th = angle_deg * M_PI / 180.0;
 	double cam = sw * 2.2;                  /* camera distance */
 	double ch = sh / 2;                     /* vertical centre of the perspective */
-	/* each strip is a separately scaled blit: ~120 of them look the same as 3px ones mid-swing */
+	/* ~120 strips look the same as 3px ones mid-swing */
 	double step = MAX(4.0, sw / 120.0);
 	/* single tiles are small and swing fast: ~16 strips each is plenty */
 	if (region.w < sw * 0.75) step = MAX(step, MIN(region.w / 16, step * 3));
-	cairo_pattern_t *pat = cairo_pattern_create_for_surface(snap);
-	cairo_pattern_set_filter(pat, CAIRO_FILTER_BILINEAR);
-	double dpx = 0, dpy = 0;
-	cairo_user_to_device_distance(cr, &dpx, &dpy);
+
+	cairo_surface_t *dst = cairo_get_group_target(cr);
+	cairo_matrix_t m;
+	cairo_get_matrix(cr, &m);
+	/* callers undo the UI scale with its inverse, which is 1 only up to rounding */
+	bool direct = fabs(m.xx - 1) < 1e-6 && fabs(m.yy - 1) < 1e-6 && fabs(m.xy) < 1e-6 && fabs(m.yx) < 1e-6 &&
+	              cairo_surface_get_type(dst) == CAIRO_SURFACE_TYPE_IMAGE &&
+	              cairo_image_surface_get_format(dst) == CAIRO_FORMAT_ARGB32 &&
+	              (cairo_image_surface_get_format(snap) == CAIRO_FORMAT_ARGB32 ||
+	               cairo_image_surface_get_format(snap) == CAIRO_FORMAT_RGB24);
+	pixman_image_t *psrc = NULL, *pdst = NULL, *pmask = NULL;
+	cairo_pattern_t *pat = NULL;
+	double ox = 0, oy = 0;                  /* user -> device pixel offset */
+	int cx0 = 0, cy0 = 0, cx1 = 0, cy1 = 0; /* clip box, device pixels */
+	if (direct) {
+		cairo_surface_get_device_offset(dst, &ox, &oy);
+		ox += m.x0;
+		oy += m.y0;
+		double a, b, c, d;
+		cairo_clip_extents(cr, &a, &b, &c, &d);
+		cx0 = MAX(0, (int)lround(a + ox));
+		cy0 = MAX(0, (int)lround(b + oy));
+		cx1 = MIN(cairo_image_surface_get_width(dst), (int)lround(c + ox));
+		cy1 = MIN(cairo_image_surface_get_height(dst), (int)lround(d + oy));
+		cairo_surface_flush(snap);
+		cairo_surface_flush(dst);
+		pixman_format_code_t sfmt = cairo_image_surface_get_format(snap) == CAIRO_FORMAT_RGB24
+		                            ? PIXMAN_x8r8g8b8 : PIXMAN_a8r8g8b8;
+		psrc = pixman_image_create_bits(sfmt, cairo_image_surface_get_width(snap),
+		                                cairo_image_surface_get_height(snap),
+		                                (uint32_t *)cairo_image_surface_get_data(snap),
+		                                cairo_image_surface_get_stride(snap));
+		pdst = pixman_image_create_bits(PIXMAN_a8r8g8b8, cairo_image_surface_get_width(dst),
+		                                cairo_image_surface_get_height(dst),
+		                                (uint32_t *)cairo_image_surface_get_data(dst),
+		                                cairo_image_surface_get_stride(dst));
+		pixman_image_set_filter(psrc, PIXMAN_FILTER_NEAREST, NULL, 0);
+		if (alpha < 1) {
+			pixman_color_t a8 = {0, 0, 0, (uint16_t)(CLAMP(alpha, 0, 1) * 0xffff)};
+			pmask = pixman_image_create_solid_fill(&a8);
+		}
+	} else {
+		pat = cairo_pattern_create_for_surface(snap);
+		cairo_pattern_set_filter(pat, CAIRO_FILTER_FAST);
+	}
 	for (double x = region.x; x < region.x + region.w; x += step) {
 		double x1 = MIN(x + step, region.x + region.w);
 		double d0 = x - pivot_x, d1 = x1 - pivot_x;
@@ -1245,20 +1292,44 @@ void ui_draw_turnstile(cairo_t *cr, cairo_surface_t *snap, double sw, double sh,
 		double km = (k0 + k1) / 2;
 		double w = sx1 - sx0;
 		if (fabs(w) < 0.01) continue;
-		cairo_save(cr);
-		/* whole-pixel strip edges: no half-blended seams, and a much cheaper clip */
-		cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
-		cairo_rectangle(cr, sx0, ch - (ch - region.y) * km, w + 0.5, region.h * km);
-		cairo_clip(cr);
-		cairo_matrix_t m;
 		/* map source x -> sx0 (+ scale), source y about ch -> scaled */
 		double sxs = w / (x1 - x), sys = km;
-		cairo_translate(cr, sx0 - x * sxs, ch - ch * sys);
-		cairo_scale(cr, sxs, sys);
-		cairo_set_source(cr, pat);
-		cairo_paint_with_alpha(cr, alpha);
-		cairo_restore(cr);
-		(void)m;
+		double tx = sx0 - x * sxs, ty = ch - ch * sys;
+		double y0 = ch - (ch - region.y) * km, h = region.h * km;
+		if (direct) {
+			/* whole-pixel strip edges: neighbours share an edge, no seams or double blends */
+			int px0 = MAX(cx0, (int)lround(MIN(sx0, sx1) + ox)), px1 = MIN(cx1, (int)lround(MAX(sx0, sx1) + ox));
+			int py0 = MAX(cy0, (int)lround(y0 + oy)), py1 = MIN(cy1, (int)lround(y0 + h + oy));
+			if (px1 <= px0 || py1 <= py0) continue;
+			/* strip pixel -> snapshot pixel, from the strip's corner so that every term stays
+			 * within the snapshot's size (pixman matrices are 16.16 fixed point) */
+			pixman_transform_t t = {{
+				{pixman_double_to_fixed(1 / sxs), 0, pixman_double_to_fixed((px0 - tx - ox) / sxs)},
+				{0, pixman_double_to_fixed(1 / sys), pixman_double_to_fixed((py0 - ty - oy) / sys)},
+				{0, 0, pixman_fixed_1},
+			}};
+			pixman_image_set_transform(psrc, &t);
+			pixman_image_composite32(PIXMAN_OP_OVER, psrc, pmask, pdst, 0, 0, 0, 0, px0, py0,
+			                         px1 - px0, py1 - py0);
+		} else {
+			cairo_save(cr);
+			/* whole-pixel strip edges: no half-blended seams, and a much cheaper clip */
+			cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+			cairo_rectangle(cr, sx0, y0, w + 0.5, h);
+			cairo_clip(cr);
+			cairo_translate(cr, tx, ty);
+			cairo_scale(cr, sxs, sys);
+			cairo_set_source(cr, pat);
+			cairo_paint_with_alpha(cr, alpha);
+			cairo_restore(cr);
+		}
 	}
-	cairo_pattern_destroy(pat);
+	if (direct) {
+		pixman_image_unref(psrc);
+		pixman_image_unref(pdst);
+		if (pmask) pixman_image_unref(pmask);
+		cairo_surface_mark_dirty(dst);
+	} else {
+		cairo_pattern_destroy(pat);
+	}
 }

@@ -27,6 +27,7 @@ static void set_defaults(void) {
 	cfg.animations = true;
 	cfg.celsius = true;
 	cfg.nav_autohide = true;
+	cfg.phone_apps = true;
 	cfg.key_sound = true;
 	str_copy(cfg.icon_mode, sizeof cfg.icon_mode, "auto");
 }
@@ -77,6 +78,7 @@ static void load_fields(void) {
 	GET_STR("home_tz", home_tz);
 	GET_STR("region", region);
 	GET_BOOL("nav_autohide", nav_autohide);
+	GET_BOOL("phone_apps", phone_apps);
 	/* one-time switch to full-colour third-party icons (older configs saved monochrome) */
 	if (!cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(g_root, "colour_icons_v1"))) {
 		cfg.mono_icons = false;
@@ -126,6 +128,7 @@ static void store_fields(void) {
 	PUT_S("home_tz", home_tz);
 	PUT_S("region", region);
 	PUT_BOOL("nav_autohide", nav_autohide);
+	PUT_BOOL("phone_apps", phone_apps);
 }
 
 cJSON *config_root(void) { return g_root; }

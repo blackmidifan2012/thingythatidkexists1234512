@@ -93,3 +93,4 @@
 	{"No web browser installed. Get one from the Store.", "Yüklü web tarayıcısı yok. Mağaza'dan edinin."},
 	{"%d%% battery remaining. Connect your charger.", "%%%d pil kaldı. Şarj cihazınızı takın."},
 	{"Battery low", "Pil zayıf"},
+	{"Battery", "Pil"},

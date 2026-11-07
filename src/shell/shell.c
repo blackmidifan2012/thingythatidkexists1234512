@@ -21,6 +21,8 @@ static int g_last_minute = -1;
 static double g_flash_t0;
 static cairo_surface_t *g_snap;           /* scratch surface for page transitions */
 static int g_snap_w, g_snap_h;
+static cairo_surface_t *g_trn_snap;       /* the screen turning in or out of a transition */
+static bool g_trn_snap_ok;                /* g_trn_snap holds the current phase's screen */
 static bool g_ext_shown_last;
 static bool g_was_animating;
 static Anim g_lock_anim;                  /* 0 = lock covers the screen, 1 = gone */
@@ -37,6 +39,7 @@ static struct {
 	View *to_view;
 	Rect origin;
 	Color color;
+	bool fresh;          /* the phase has not drawn its first frame yet */
 } trn;
 
 /* -------------------------------------------------------------- helpers --- */
@@ -96,11 +99,13 @@ void shell_set_output(int pw, int ph, double scale) {
 	sh.pw = pw;
 	sh.ph = ph;
 	sh.scale = scale;
-	sh.w = srv.out ? srv.out->lw : pw / scale;
-	sh.h = srv.out ? srv.out->lh : ph / scale;
+	/* whole dp, like wlroots' logical sizes; Linux apps use their own scale, see output.c */
+	sh.w = (int)(pw / scale);
+	sh.h = (int)(ph / scale);
 	sh.status_h = STATUS_H;
 	sh.nav_h = NAV_H;
 	if (g_snap) { cairo_surface_destroy(g_snap); g_snap = NULL; }
+	if (g_trn_snap) { cairo_surface_destroy(g_trn_snap); g_trn_snap = NULL; }
 	shell_invalidate();
 }
 
@@ -121,12 +126,10 @@ cairo_surface_t *shell_snapshot_new(void) {
 	return g_snap;
 }
 
-/* Runs `fn` with the UI redirected to the scratch surface. */
-cairo_surface_t *shell_draw_snapshot(void (*fn)(UI *, void *), void *arg) {
+void shell_draw_into(cairo_surface_t *s, double scale, void (*fn)(UI *, void *), void *arg) {
 	UI *ui = &sh.ui;
-	cairo_surface_t *s = shell_snapshot_new();
 	cairo_t *saved = ui->cr, *c = cairo_create(s);
-	cairo_scale(c, sh.scale, sh.scale);
+	cairo_scale(c, scale, scale);
 	ui->cr = c;
 	bool was_blocked = ui->blocked;
 	ui->blocked = true;
@@ -135,6 +138,12 @@ cairo_surface_t *shell_draw_snapshot(void (*fn)(UI *, void *), void *arg) {
 	ui->cr = saved;
 	cairo_destroy(c);
 	cairo_surface_flush(s);
+}
+
+/* Runs `fn` with the UI redirected to the scratch surface. */
+cairo_surface_t *shell_draw_snapshot(void (*fn)(UI *, void *), void *arg) {
+	cairo_surface_t *s = shell_snapshot_new();
+	shell_draw_into(s, sh.scale, fn, arg);
 	return s;
 }
 
@@ -201,6 +210,7 @@ static void draw_screen_cb(UI *ui, void *arg) { draw_screen(ui, ((DrawArg *)arg)
 static bool transitions_enabled(void) { return cfg.animations && !cfg.battery_saver; }
 
 static void tr_commit_target(void) {
+	if (sh.screen == SCR_SWITCHER && trn.to != SCR_SWITCHER) switcher_close();
 	sh.screen = trn.to;
 	sh.cur_app = trn.to_app;
 	sh.cur_view = trn.to_view;
@@ -217,7 +227,6 @@ static void tr_commit_target(void) {
 }
 
 void shell_transition(ScreenKind to, const AppDef *app, View *view, Rect origin, Color col, bool back) {
-	UI *ui = &sh.ui;
 	if (trn.phase != TR_NONE) { tr_commit_target(); trn.phase = TR_NONE; }
 	trn.from = sh.screen;
 	trn.to = to;
@@ -232,31 +241,57 @@ void shell_transition(ScreenKind to, const AppDef *app, View *view, Rect origin,
 		return;
 	}
 	trn.phase = TR_LEAVE;
-	trn.t0 = ui->now > 0 ? now_sec() : now_sec();
+	trn.t0 = now_sec();
+	trn.fresh = true;
+	g_trn_snap_ok = false;
 	trn.dur = sh.screen == SCR_HOME ? 0.36 : 0.2;
 	if (sh.screen == SCR_HOME) start_leave_anim(origin);
 	shell_invalidate();
 }
 
 static void draw_turnstiled_screen(UI *ui, ScreenKind k, double angle) {
-	DrawArg a = {k};
-	cairo_surface_t *s = shell_draw_snapshot(draw_screen_cb, &a);
+	/* the page does not change while it swings: draw it once per phase, not every frame */
+	if (!g_trn_snap_ok) {
+		if (g_trn_snap && (cairo_image_surface_get_width(g_trn_snap) != sh.pw ||
+		                   cairo_image_surface_get_height(g_trn_snap) != sh.ph)) {
+			cairo_surface_destroy(g_trn_snap);
+			g_trn_snap = NULL;
+		}
+		/* opaque: every screen paints its background first */
+		if (!g_trn_snap) g_trn_snap = cairo_image_surface_create(CAIRO_FORMAT_RGB24, sh.pw, sh.ph);
+		DrawArg a = {k};
+		shell_draw_into(g_trn_snap, sh.scale, draw_screen_cb, &a);
+		g_trn_snap_ok = true;
+	}
 	/* the snapshot is in pixels; the cr is scaled by `scale`, so draw in pixel space */
 	cairo_save(ui->cr);
 	cairo_scale(ui->cr, 1.0 / sh.scale, 1.0 / sh.scale);
 	gfx_fill_rect(ui->cr, R(0, 0, sh.pw, sh.ph), ui->th.bg);
-	ui_draw_turnstile(ui->cr, s, sh.pw, sh.ph, R(0, 0, sh.pw, sh.ph), angle, 0, 1.0);
+	ui_draw_turnstile(ui->cr, g_trn_snap, sh.pw, sh.ph, R(0, 0, sh.pw, sh.ph), angle, 0, 1.0);
 	cairo_restore(ui->cr);
+}
+
+/* The first frame of a phase draws its snapshots and can take several frame times on a
+ * phone; the phase's clock starts once that is done, so the swing does not jump ahead. */
+static double phase_progress(double now) {
+	return trn.fresh ? 0 : (now - trn.t0) / trn.dur;
+}
+
+static void phase_drawn(void) {
+	if (!trn.fresh) return;
+	trn.fresh = false;
+	trn.t0 = now_sec();
 }
 
 static void draw_base(UI *ui) {
 	double now = ui->now;
 	if (trn.phase == TR_LEAVE) {
-		double p = (now - trn.t0) / trn.dur;
+		double p = phase_progress(now);
 		if (p >= 1) {
 			tr_commit_target();
 			trn.phase = TR_ENTER;
-			trn.t0 = now;
+			trn.fresh = true;
+			g_trn_snap_ok = false;
 			trn.dur = trn.to == SCR_HOME ? 0.42 : 0.26;
 			p = 0;
 			if (trn.to == SCR_EXT) trn.phase = TR_NONE;
@@ -271,11 +306,12 @@ static void draw_base(UI *ui) {
 			} else {
 				draw_turnstiled_screen(ui, trn.from, -ease(EASE_IN_QUAD, p) * 78);
 			}
+			phase_drawn();
 			return;
 		}
 	}
 	if (trn.phase == TR_ENTER) {
-		double p = (now - trn.t0) / trn.dur;
+		double p = phase_progress(now);
 		if (p >= 1) {
 			trn.phase = TR_NONE;
 		} else {
@@ -287,6 +323,7 @@ static void draw_base(UI *ui) {
 			} else {
 				draw_turnstiled_screen(ui, sh.screen, (1 - ease(EASE_OUT_CUBIC, p)) * 78);
 			}
+			phase_drawn();
 			return;
 		}
 	}
@@ -834,8 +871,9 @@ static void draw_overlays(UI *ui, bool ext_visible) {
 	sh.kbd_pos = ui_anim(ui, &sh.kbd_anim);
 	ui->kbd_inset = sh.kbd_pos;
 	/* with the nav bar auto-hidden the keyboard sits on the bottom edge, where the app
-	 * layout already expects it */
-	bool nav_hidden = (sh.fullscreen_ext || (cfg.nav_autohide && sh.cur_view)) && sh.screen == SCR_EXT;
+	 * layout already expects it; while a swipe up shows the bar it moves up above it */
+	bool nav_hidden = (sh.fullscreen_ext || (cfg.nav_autohide && sh.cur_view)) && sh.screen == SCR_EXT &&
+	                  ui->now >= sh.nav_peek_until;
 	if (sh.kbd_pos > 0.5) osk_draw(ui, sh.h - (nav_hidden ? 0 : NAV_H));
 	ui->layer = UL_PANEL;
 	actioncenter_draw(ui);
@@ -911,8 +949,9 @@ bool shell_render(double now) {
 
 	bool more = animating || ui->redraw || trn.phase != TR_NONE;
 	g_was_animating = more;
-	/* the scratch surface for transitions is screen sized: release it while idle */
+	/* the scratch surfaces for transitions are screen sized: release them while idle */
 	if (!more && g_snap) { cairo_surface_destroy(g_snap); g_snap = NULL; }
+	if (!more && g_trn_snap) { cairo_surface_destroy(g_trn_snap); g_trn_snap = NULL; }
 	if (ui->redraw) sh.dirty = true;
 	return more;
 }

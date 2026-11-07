@@ -122,6 +122,8 @@ bool shell_lock_dragging(void);
 void shell_unlock_from(double pos);
 /* Renders `fn` into the scratch surface (pixel sized) with input blocked. */
 cairo_surface_t *shell_draw_snapshot(void (*fn)(UI *, void *), void *arg);
+/* Runs `fn` with the UI drawing into the image `s` at `scale` pixels per dp, input disabled. */
+void shell_draw_into(cairo_surface_t *s, double scale, void (*fn)(UI *, void *), void *arg);
 
 void shell_view_mapped(View *v);
 void shell_view_unmapped(View *v);
@@ -203,6 +205,7 @@ bool actioncenter_back(void);
 /* ---- switcher.c */
 void switcher_draw(UI *ui, Rect area);
 void switcher_open(void);
+void switcher_close(void);
 
 /* ---- search.c */
 void search_open(void);

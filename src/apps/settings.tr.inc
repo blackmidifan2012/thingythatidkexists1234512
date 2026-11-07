@@ -130,6 +130,8 @@
 	{"automatic (%d%%)", "otomatik (%%%d)"},
 	{"Display scale", "Ekran ölçeği"},
 	{"Makes everything on the screen bigger or smaller. Automatic picks a size that suits the screen.", "Ekrandaki her şeyi büyütür ya da küçültür. Otomatik, ekrana uygun bir boyut seçer."},
+	{"Phone-size Linux apps", "Telefon boyutunda Linux uygulamaları"},
+	{"Shows GNOME, KDE and other Linux apps at the size they are made for on phones, so they use their phone layouts. Turn off to fit more into them.", "GNOME, KDE ve diğer Linux uygulamalarını telefonlar için tasarlandıkları boyutta gösterir, böylece telefon düzenlerini kullanırlar. İçlerine daha fazlasını sığdırmak için kapatın."},
 	{"24-hour clock", "24 saat biçimi"},
 	{"Time zone", "Saat dilimi"},
 	{"Automatic uses the system time zone (%s).", "Otomatik, sistem saat dilimini (%s) kullanır."},

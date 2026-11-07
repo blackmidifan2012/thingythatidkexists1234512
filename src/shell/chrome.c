@@ -116,7 +116,11 @@ void chrome_draw(UI *ui) {
 	if (!sh.locked && (sh.fullscreen_ext || (cfg.nav_autohide && sh.cur_view)) && sh.screen == SCR_EXT) {
 		UiId bid = ui_id("nav-peek");
 		ui_hit_drag(ui, bid, R(0, sh.h - 12, sh.w, 12));
-		if (ui_dragging(ui, bid) && ui->p.moved && ui->p.sy - ui->p.y > 12) {
+		/* an open keyboard sits on the edge over this strip: a swipe up from its bottom
+		 * row counts too, and takes the finger off the key so it does not type */
+		bool from_kbd = ui->p.down && ui->p.active_layer == UL_OSK && ui->p.sy >= sh.h - 12;
+		if ((ui_dragging(ui, bid) || from_kbd) && ui->p.moved && ui->p.sy - ui->p.y > 12) {
+			if (from_kbd) ui_capture(ui, bid);
 			sh.nav_peek_until = ui->now + 3.5;
 			/* redraw once the peek expires so the bar actually hides again */
 			static Timer *hide;

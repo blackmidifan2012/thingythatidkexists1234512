@@ -137,6 +137,16 @@ int server_main(void) {
 	setenv("XDG_SESSION_TYPE", "wayland", 1);
 	setenv("XDG_CURRENT_DESKTOP", "metrowl", 1);
 	LOGI("metrowl %s running on WAYLAND_DISPLAY=%s", METROWL_VERSION, srv.socket);
+	/* Apps started by D-Bus or systemd (notifications, xdg-open, D-Bus activated GNOME and
+	 * KDE apps) need this display and the phone layout variables too. Only when metrowl is
+	 * the session on the screen: nested in another desktop it would send its apps here. */
+	if (srv.session && proc_exists("dbus-update-activation-environment")) {
+		char *argv[] = {"dbus-update-activation-environment", "--systemd", "WAYLAND_DISPLAY",
+			"XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE", "MOZ_ENABLE_WAYLAND", "QT_QUICK_CONTROLS_MOBILE",
+			"PLASMA_PLATFORM", "QT_WAYLAND_DISABLE_WINDOWDECORATION", "GTK_CSD", "QT_QPA_PLATFORM",
+			"SDL_VIDEODRIVER", "_JAVA_AWT_WM_NONREPARENTING", NULL};
+		proc_spawn(argv);   /* the variables are set in the child, see child_env() */
+	}
 
 	ipc_init(srv.opt_ipc_path);
 	notifyd_init();

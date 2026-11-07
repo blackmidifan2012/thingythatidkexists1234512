@@ -72,6 +72,8 @@ struct _PangoLayout *gfx_layout_new(cairo_t *cr, const char *s, double size, int
 typedef struct Image {
 	cairo_surface_t *surf;   /* ARGB32 premultiplied */
 	int w, h;
+	cairo_surface_t *scaled; /* copy at the device size it was last drawn at */
+	int sw, sh;
 } Image;
 
 Image *image_load(const char *path, int max_dim);                  /* PNG/JPG/BMP/GIF/SVG/... */

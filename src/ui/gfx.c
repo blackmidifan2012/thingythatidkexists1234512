@@ -257,6 +257,7 @@ Image *image_from_surface(cairo_surface_t *s) {
 void image_free(Image *img) {
 	if (!img) return;
 	cairo_surface_destroy(img->surf);
+	if (img->scaled) cairo_surface_destroy(img->scaled);
 	free(img);
 }
 
@@ -366,17 +367,56 @@ Image *image_load_icon(const char *path, int px) {
 	return image_load(path, px);
 }
 
+/* Scaling a picture with CAIRO_FILTER_GOOD on every frame is far too slow for phone
+ * CPUs: keep a copy pre-scaled to the device size it is drawn at and blit that 1:1.
+ * Moves the origin to (x, y) and the image's scale s; returns a pattern to paint. */
+static cairo_pattern_t *image_pattern(cairo_t *cr, const Image *cimg, double x, double y, double s) {
+	Image *img = (Image *)cimg;
+	cairo_surface_t *src = img->surf;
+	cairo_translate(cr, x, y);
+	cairo_matrix_t m;
+	cairo_get_matrix(cr, &m);
+	if (m.xy == 0 && m.yx == 0 && m.xx > 0 && m.yy > 0) {
+		int dw = MAX(1, (int)lround(img->w * s * m.xx)), dh = MAX(1, (int)lround(img->h * s * m.yy));
+		if (dw != img->w || dh != img->h) {
+			if (!img->scaled || img->sw != dw || img->sh != dh) {
+				if (img->scaled) cairo_surface_destroy(img->scaled);
+				img->scaled = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dw, dh);
+				cairo_t *c = cairo_create(img->scaled);
+				cairo_scale(c, (double)dw / img->w, (double)dh / img->h);
+				cairo_set_source_surface(c, img->surf, 0, 0);
+				cairo_pattern_set_filter(cairo_get_source(c), CAIRO_FILTER_GOOD);
+				cairo_paint(c);
+				cairo_destroy(c);
+				img->sw = dw;
+				img->sh = dh;
+			}
+			src = img->scaled;
+		}
+		cairo_identity_matrix(cr);
+		cairo_translate(cr, round(m.x0), round(m.y0));
+	} else {
+		cairo_scale(cr, s, s);
+	}
+	cairo_pattern_t *p = cairo_pattern_create_for_surface(src);
+	cairo_pattern_set_filter(p, CAIRO_FILTER_BILINEAR);
+	return p;
+}
+
+static void image_paint(cairo_t *cr, const Image *img, double x, double y, double s, double alpha) {
+	cairo_pattern_t *p = image_pattern(cr, img, x, y, s);
+	cairo_set_source(cr, p);
+	cairo_paint_with_alpha(cr, alpha);
+	cairo_pattern_destroy(p);
+}
+
 void gfx_image_cover(cairo_t *cr, const Image *img, Rect r, double alpha) {
 	if (!img || r.w <= 0 || r.h <= 0) return;
 	double s = MAX(r.w / img->w, r.h / img->h);
 	cairo_save(cr);
 	cairo_rectangle(cr, r.x, r.y, r.w, r.h);
 	cairo_clip(cr);
-	cairo_translate(cr, r.x + (r.w - img->w * s) / 2, r.y + (r.h - img->h * s) / 2);
-	cairo_scale(cr, s, s);
-	cairo_set_source_surface(cr, img->surf, 0, 0);
-	cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_GOOD);
-	cairo_paint_with_alpha(cr, alpha);
+	image_paint(cr, img, r.x + (r.w - img->w * s) / 2, r.y + (r.h - img->h * s) / 2, s, alpha);
 	cairo_restore(cr);
 }
 
@@ -384,11 +424,7 @@ void gfx_image_contain(cairo_t *cr, const Image *img, Rect r, double alpha) {
 	if (!img || r.w <= 0 || r.h <= 0) return;
 	double s = MIN(r.w / img->w, r.h / img->h);
 	cairo_save(cr);
-	cairo_translate(cr, r.x + (r.w - img->w * s) / 2, r.y + (r.h - img->h * s) / 2);
-	cairo_scale(cr, s, s);
-	cairo_set_source_surface(cr, img->surf, 0, 0);
-	cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_GOOD);
-	cairo_paint_with_alpha(cr, alpha);
+	image_paint(cr, img, r.x + (r.w - img->w * s) / 2, r.y + (r.h - img->h * s) / 2, s, alpha);
 	cairo_restore(cr);
 }
 
@@ -396,9 +432,9 @@ void gfx_image_silhouette(cairo_t *cr, const Image *img, Rect r, Color c) {
 	if (!img) return;
 	double s = MIN(r.w / img->w, r.h / img->h);
 	cairo_save(cr);
-	cairo_translate(cr, r.x + (r.w - img->w * s) / 2, r.y + (r.h - img->h * s) / 2);
-	cairo_scale(cr, s, s);
+	cairo_pattern_t *p = image_pattern(cr, img, r.x + (r.w - img->w * s) / 2, r.y + (r.h - img->h * s) / 2, s);
 	gfx_set_color(cr, c);
-	cairo_mask_surface(cr, img->surf, 0, 0);
+	cairo_mask(cr, p);
+	cairo_pattern_destroy(p);
 	cairo_restore(cr);
 }

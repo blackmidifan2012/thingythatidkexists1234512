@@ -832,6 +832,9 @@ static void draw_overlays(UI *ui, bool ext_visible) {
 	if (sh.kbd_pos > 0.5) osk_draw(ui, sh.h - NAV_H);
 	ui->layer = UL_PANEL;
 	actioncenter_draw(ui);
+	/* these slides are advanced in shell_render(): keep frames coming until they finish,
+	 * otherwise on a touchscreen (no hover events) they freeze where the finger let go */
+	if (sh.ac_anim.active || g_lock_anim.active) ui->animating = true;
 	ui->layer = UL_DIALOG;
 	dialog_draw(ui);
 	if (sh.locked || g_lock_pos < 0.999 ) {

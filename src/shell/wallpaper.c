@@ -4,6 +4,7 @@
 #include "../util.h"
 
 #include <math.h>
+#include <string.h>
 
 /* Wallpapers: user pictures (loaded asynchronously) or a generated Metro-style
  * abstract composition in the accent colour. */
@@ -38,7 +39,7 @@ static unsigned rnd(unsigned *s) {
 	return *s >> 8;
 }
 
-void wallpaper_draw_generated(cairo_t *cr, Rect r, Color accent, bool dark, unsigned seed) {
+static void paint_generated(cairo_t *cr, Rect r, Color accent, unsigned seed) {
 	Color dk = col_mix(accent, COL_BLACK, 0.7f);
 	Color md = col_mix(accent, COL_BLACK, 0.35f);
 	cairo_save(cr);
@@ -75,5 +76,42 @@ void wallpaper_draw_generated(cairo_t *cr, Rect r, Color accent, bool dark, unsi
 	cairo_close_path(cr);
 	cairo_fill(cr);
 	cairo_restore(cr);
+}
+
+/* Painting the composition is several full-screen blends: far too slow to redo on
+ * every frame of an animation on a phone, so keep the last one as a bitmap. */
+static struct {
+	cairo_surface_t *surf;
+	int w, h;
+	Color accent;
+	unsigned seed;
+} g_gen;
+
+void wallpaper_draw_generated(cairo_t *cr, Rect r, Color accent, bool dark, unsigned seed) {
 	(void)dark;
+	cairo_matrix_t m;
+	cairo_get_matrix(cr, &m);
+	if (m.xy != 0 || m.yx != 0 || m.xx <= 0 || m.yy <= 0) { paint_generated(cr, r, accent, seed); return; }
+	int w = MAX(1, (int)lround(r.w * m.xx)), h = MAX(1, (int)lround(r.h * m.yy));
+	if (!g_gen.surf || g_gen.w != w || g_gen.h != h || g_gen.seed != seed ||
+	    memcmp(&g_gen.accent, &accent, sizeof accent) != 0) {
+		if (g_gen.surf) cairo_surface_destroy(g_gen.surf);
+		g_gen.surf = cairo_image_surface_create(CAIRO_FORMAT_RGB24, w, h);
+		cairo_t *c = cairo_create(g_gen.surf);
+		cairo_scale(c, (double)w / r.w, (double)h / r.h);
+		paint_generated(c, R(0, 0, r.w, r.h), accent, seed);
+		cairo_destroy(c);
+		g_gen.w = w;
+		g_gen.h = h;
+		g_gen.accent = accent;
+		g_gen.seed = seed;
+	}
+	double x = r.x, y = r.y;
+	cairo_user_to_device(cr, &x, &y);
+	cairo_save(cr);
+	cairo_identity_matrix(cr);
+	cairo_set_source_surface(cr, g_gen.surf, round(x), round(y));
+	cairo_rectangle(cr, round(x), round(y), w, h);
+	cairo_fill(cr);
+	cairo_restore(cr);
 }

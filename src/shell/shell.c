@@ -344,7 +344,7 @@ void shell_toggle_action_center(bool open) {
 	if (open == sh.ac_target_open && !sh.ac_dragging) return;
 	sh.ac_target_open = open;
 	sh.ac_dragging = false;
-	anim_start(&sh.ac_anim, sh.ac_pos, open ? 1 : 0, sh.ui.now ? sh.ui.now : now_sec(), 0.28, EASE_OUT_CUBIC);
+	anim_start(&sh.ac_anim, sh.ac_pos, open ? 1 : 0, now_sec(), 0.28, EASE_OUT_CUBIC);
 	shell_invalidate();
 }
 

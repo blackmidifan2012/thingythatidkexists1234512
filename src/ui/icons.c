@@ -755,8 +755,7 @@ static void begin(cairo_t *cr, double cx, double cy, double size, Color c) {
 	cairo_set_line_join(cr, CAIRO_LINE_JOIN_MITER);
 }
 
-void icon_draw_ex(cairo_t *cr, Icon ic, double cx, double cy, double size, Color c, int flags) {
-	if (ic <= ICON_NONE || ic >= ICON_COUNT) return;
+static void icon_raster(cairo_t *cr, Icon ic, double cx, double cy, double size, Color c, int flags) {
 	if (!draw_font_glyph(cr, ic, cx, cy, size, c)) {
 		if (!DRAW[ic]) return;
 		begin(cr, cx, cy, size, c);
@@ -769,6 +768,57 @@ void icon_draw_ex(cairo_t *cr, Icon ic, double cx, double cy, double size, Color
 		MV(-10, -10); LN(10, 10); STROKE();
 		cairo_restore(cr);
 	}
+}
+
+/* Rasterising the vector icons was the most expensive part of a Start frame on phone
+ * CPUs: keep an alpha mask per (icon, device size) and only composite it. */
+typedef struct {
+	int ic, flags, dsz, half;
+	cairo_surface_t *mask;
+	uint64_t used;
+} IconEnt;
+
+#define ICACHE_N 256
+static IconEnt g_icache[ICACHE_N];
+static uint64_t g_itick;
+
+void icon_draw_ex(cairo_t *cr, Icon ic, double cx, double cy, double size, Color c, int flags) {
+	if (ic <= ICON_NONE || ic >= ICON_COUNT) return;
+	cairo_matrix_t m;
+	cairo_get_matrix(cr, &m);
+	if (m.xy != 0 || m.yx != 0 || m.xx <= 0 || fabs(m.xx - m.yy) > 1e-6 || size * m.xx > 400) {
+		icon_raster(cr, ic, cx, cy, size, c, flags);
+		return;
+	}
+	int dsz = (int)lround(size * m.xx * 4);   /* quarter-pixel steps */
+	uint32_t h = ((uint32_t)ic * 2654435761u) ^ ((uint32_t)dsz * 40503u) ^ ((uint32_t)flags * 97u);
+	IconEnt *e = NULL, *old = NULL;
+	for (int i = 0; i < 8; i++) {
+		IconEnt *p = &g_icache[(h + i) % ICACHE_N];
+		if (p->mask && p->ic == ic && p->flags == flags && p->dsz == dsz) { e = p; break; }
+		if (!old || p->used < old->used) old = p;
+	}
+	if (!e) {
+		e = old;
+		if (e->mask) cairo_surface_destroy(e->mask);
+		double ds = dsz / 4.0;
+		e->half = (int)ceil(ds * 0.75) + 2;
+		e->mask = cairo_image_surface_create(CAIRO_FORMAT_A8, e->half * 2, e->half * 2);
+		cairo_t *mc = cairo_create(e->mask);
+		icon_raster(mc, ic, e->half, e->half, ds, COL_WHITE, flags);
+		cairo_destroy(mc);
+		e->ic = ic;
+		e->flags = flags;
+		e->dsz = dsz;
+	}
+	e->used = ++g_itick;
+	double x = cx, y = cy;
+	cairo_user_to_device(cr, &x, &y);
+	cairo_save(cr);
+	cairo_identity_matrix(cr);
+	gfx_set_color(cr, c);
+	cairo_mask_surface(cr, e->mask, round(x) - e->half, round(y) - e->half);
+	cairo_restore(cr);
 }
 
 void icon_draw(cairo_t *cr, Icon ic, double cx, double cy, double size, Color c) {

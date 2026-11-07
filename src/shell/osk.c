@@ -358,7 +358,7 @@ bool osk_wanted(void) { return g_ui_wanted || textinput_active() || sh.kbd_force
 
 /* ------------------------------------------------------------------ layout - */
 
-static double key_height(void) { return CLAMP(MIN(sh.w, sh.h) * 0.1, 38, 52); }
+static double key_height(void) { return CLAMP(MIN(sh.w, sh.h) * 0.125, 42, 62); }
 #define SUGG_H 38.0
 
 double osk_height(void) {

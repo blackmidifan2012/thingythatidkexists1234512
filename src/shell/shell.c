@@ -830,7 +830,10 @@ static void draw_overlays(UI *ui, bool ext_visible) {
 	}
 	sh.kbd_pos = ui_anim(ui, &sh.kbd_anim);
 	ui->kbd_inset = sh.kbd_pos;
-	if (sh.kbd_pos > 0.5) osk_draw(ui, sh.h - NAV_H);
+	/* with the nav bar auto-hidden the keyboard sits on the bottom edge, where the app
+	 * layout already expects it */
+	bool nav_hidden = (sh.fullscreen_ext || (cfg.nav_autohide && sh.cur_view)) && sh.screen == SCR_EXT;
+	if (sh.kbd_pos > 0.5) osk_draw(ui, sh.h - (nav_hidden ? 0 : NAV_H));
 	ui->layer = UL_PANEL;
 	actioncenter_draw(ui);
 	/* these slides are advanced in shell_render(): keep frames coming until they finish,

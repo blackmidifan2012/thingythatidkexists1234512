@@ -1227,7 +1227,9 @@ void ui_draw_turnstile(cairo_t *cr, cairo_surface_t *snap, double sw, double sh,
 	double cam = sw * 2.2;                  /* camera distance */
 	double ch = sh / 2;                     /* vertical centre of the perspective */
 	/* each strip is a separately scaled blit: ~120 of them look the same as 3px ones mid-swing */
-	const double step = MAX(4.0, sw / 120.0);
+	double step = MAX(4.0, sw / 120.0);
+	/* single tiles are small and swing fast: ~16 strips each is plenty */
+	if (region.w < sw * 0.75) step = MAX(step, MIN(region.w / 16, step * 3));
 	cairo_pattern_t *pat = cairo_pattern_create_for_surface(snap);
 	cairo_pattern_set_filter(pat, CAIRO_FILTER_BILINEAR);
 	double dpx = 0, dpy = 0;
@@ -1244,6 +1246,8 @@ void ui_draw_turnstile(cairo_t *cr, cairo_surface_t *snap, double sw, double sh,
 		double w = sx1 - sx0;
 		if (fabs(w) < 0.01) continue;
 		cairo_save(cr);
+		/* whole-pixel strip edges: no half-blended seams, and a much cheaper clip */
+		cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
 		cairo_rectangle(cr, sx0, ch - (ch - region.y) * km, w + 0.5, region.h * km);
 		cairo_clip(cr);
 		cairo_matrix_t m;

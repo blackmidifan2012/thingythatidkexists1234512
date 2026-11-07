@@ -373,10 +373,22 @@ void start_draw(UI *ui, Rect area, double xoff) {
 		ui->blocked = true;
 		TilesArg arg = {off, now};
 		/* offscreen copy of the tiles in pixel space */
-		cairo_surface_t *snap;
-		{
-			cairo_surface_t *s = shell_snapshot_new();
+		/* the tiles do not change while they swing: draw them once per animation */
+		static cairo_surface_t *snap;
+		static double snap_t0;
+		if (snap && (cairo_image_surface_get_width(snap) != sh.pw || cairo_image_surface_get_height(snap) != sh.ph)) {
+			cairo_surface_destroy(snap);
+			snap = NULL;
+		}
+		if (!snap || snap_t0 != g_anim.t0) {
+			if (!snap) snap = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, sh.pw, sh.ph);
+			snap_t0 = g_anim.t0;
+			cairo_surface_t *s = snap;
 			cairo_t *c2 = cairo_create(s);
+			cairo_set_operator(c2, CAIRO_OPERATOR_SOURCE);
+			cairo_set_source_rgba(c2, 0, 0, 0, 0);
+			cairo_paint(c2);
+			cairo_set_operator(c2, CAIRO_OPERATOR_OVER);
 			cairo_scale(c2, sh.scale, sh.scale);
 			cairo_translate(c2, 0, area.y);
 			cairo_t *saved = ui->cr;
@@ -386,7 +398,6 @@ void start_draw(UI *ui, Rect area, double xoff) {
 			ui->cr = saved;
 			cairo_destroy(c2);
 			cairo_surface_flush(s);
-			snap = s;
 			(void)arg;
 		}
 		cairo_save(cr);
@@ -410,6 +421,8 @@ void start_draw(UI *ui, Rect area, double xoff) {
 		cairo_restore(cr);
 		(void)total;
 		if (all_done && t > 0.1) {
+			cairo_surface_destroy(snap);
+			snap = NULL;
 			if (g_anim.mode == 2) g_anim.mode = 0;
 			else g_anim.mode = 3;   /* leave finished: stay hidden until the shell switches screens */
 		}

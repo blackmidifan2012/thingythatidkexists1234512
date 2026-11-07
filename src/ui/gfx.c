@@ -124,6 +124,10 @@ typedef struct {
 	float max_w;
 	PangoLayout *layout;
 	uint64_t used;
+	cairo_surface_t *mask;       /* rendered text at device scale mask_scale, see gfx_text() */
+	double mask_scale;
+	int mask_x, mask_y;          /* mask origin relative to the text origin, device pixels */
+	cairo_matrix_t m;            /* transform the layout was last updated for */
 } CacheEnt;
 
 #define CACHE_N 512
@@ -139,8 +143,8 @@ static uint32_t text_hash(const char *s, double size, int weight, int align, int
 	return h ? h : 1;
 }
 
-static PangoLayout *get_layout(cairo_t *cr, const char *s, double size, int weight, int align,
-                               double max_w, int lines) {
+static CacheEnt *get_ent(cairo_t *cr, const char *s, double size, int weight, int align,
+                         double max_w, int lines) {
 	size *= g_text_scale;
 	uint32_t h = text_hash(s, size, weight, align, lines, max_w);
 	CacheEnt *slot = NULL, *oldest = &g_cache[0];
@@ -149,8 +153,15 @@ static PangoLayout *get_layout(cairo_t *cr, const char *s, double size, int weig
 		if (e->layout && e->hash == h && e->weight == weight && e->align == align && e->lines == lines
 		    && e->size == (float)size && e->max_w == (float)max_w && strcmp(e->text, s) == 0) {
 			e->used = ++g_tick;
-			pango_cairo_update_layout(cr, e->layout);
-			return e->layout;
+			/* updating bumps the context serial and forces a full relayout: only do it
+			 * when the transform really changed */
+			cairo_matrix_t m;
+			cairo_get_matrix(cr, &m);
+			if (m.xx != e->m.xx || m.yy != e->m.yy || m.xy != e->m.xy || m.yx != e->m.yx) {
+				pango_cairo_update_layout(cr, e->layout);
+				e->m = m;
+			}
+			return e;
 		}
 		if (!e->layout) { slot = e; break; }
 		if (e->used < oldest->used) oldest = e;
@@ -158,6 +169,7 @@ static PangoLayout *get_layout(cairo_t *cr, const char *s, double size, int weig
 	}
 	if (!slot) slot = oldest;
 	if (slot->layout) { g_object_unref(slot->layout); free(slot->text); }
+	if (slot->mask) cairo_surface_destroy(slot->mask);
 
 	PangoLayout *l = pango_cairo_create_layout(cr);
 	PangoFontDescription *fd = pango_font_description_new();
@@ -179,7 +191,43 @@ static PangoLayout *get_layout(cairo_t *cr, const char *s, double size, int weig
 	}
 	pango_cairo_update_layout(cr, l);
 	*slot = (CacheEnt){h, xstrdup(s), (float)size, weight, align, lines, (float)max_w, l, ++g_tick};
-	return l;
+	cairo_get_matrix(cr, &slot->m);
+	return slot;
+}
+
+static PangoLayout *get_layout(cairo_t *cr, const char *s, double size, int weight, int align,
+                               double max_w, int lines) {
+	return get_ent(cr, s, size, weight, align, max_w, lines)->layout;
+}
+
+/* Laying out and rasterising glyphs every frame is a large part of a frame on phone
+ * CPUs: render each cached layout once into an alpha mask and stamp that instead. */
+static cairo_surface_t *text_mask(cairo_t *cr, CacheEnt *e, double scale) {
+	if (e->mask && e->mask_scale == scale) return e->mask;
+	if (e->mask) cairo_surface_destroy(e->mask);
+	e->mask = NULL;
+	PangoRectangle ink, log;
+	pango_layout_get_extents(e->layout, &ink, &log);
+	double x0 = MIN(ink.x, log.x), y0 = MIN(ink.y, log.y);
+	double x1 = MAX(ink.x + ink.width, log.x + log.width), y1 = MAX(ink.y + ink.height, log.y + log.height);
+	int mx = (int)floor(x0 / PANGO_SCALE * scale) - 1, my = (int)floor(y0 / PANGO_SCALE * scale) - 1;
+	int w = (int)ceil(x1 / PANGO_SCALE * scale) + 1 - mx, h = (int)ceil(y1 / PANGO_SCALE * scale) + 1 - my;
+	if (w <= 0 || h <= 0 || (double)w * h > 4e6) return NULL;
+	e->mask = cairo_image_surface_create(CAIRO_FORMAT_A8, w, h);
+	cairo_t *mc = cairo_create(e->mask);
+	cairo_font_options_t *fo = cairo_font_options_create();
+	cairo_get_font_options(cr, fo);
+	cairo_set_font_options(mc, fo);
+	cairo_font_options_destroy(fo);
+	cairo_translate(mc, -mx, -my);
+	cairo_scale(mc, scale, scale);
+	pango_cairo_update_layout(mc, e->layout);
+	pango_cairo_show_layout(mc, e->layout);
+	cairo_destroy(mc);
+	e->mask_scale = scale;
+	e->mask_x = mx;
+	e->mask_y = my;
+	return e->mask;
 }
 
 Size gfx_text_size(cairo_t *cr, const char *s, double size, int weight, double max_w, int max_lines) {
@@ -200,7 +248,8 @@ double gfx_line_height(cairo_t *cr, double size, int weight) {
 double gfx_text(cairo_t *cr, const char *s, double x, double y, double size, int weight,
                 Color c, int align, double max_w, int max_lines) {
 	if (!s || !*s || c.a <= 0) return gfx_line_height(cr, size, weight);
-	PangoLayout *l = get_layout(cr, s, size, weight, align, max_w, max_lines);
+	CacheEnt *e = get_ent(cr, s, size, weight, align, max_w, max_lines);
+	PangoLayout *l = e->layout;
 	PangoRectangle r;
 	pango_layout_get_extents(l, NULL, &r);
 	double bw = max_w > 0 ? max_w : (double)r.width / PANGO_SCALE;
@@ -210,6 +259,17 @@ double gfx_text(cairo_t *cr, const char *s, double x, double y, double size, int
 	cairo_user_to_device(cr, &dx, &dy);
 	dx = round(dx);
 	dy = round(dy);
+	cairo_matrix_t m;
+	cairo_get_matrix(cr, &m);
+	cairo_surface_t *mask = m.xy == 0 && m.yx == 0 && m.xx > 0 && m.xx == m.yy ? text_mask(cr, e, m.xx) : NULL;
+	if (mask) {
+		cairo_save(cr);
+		cairo_identity_matrix(cr);
+		gfx_set_color(cr, c);
+		cairo_mask_surface(cr, mask, dx + e->mask_x, dy + e->mask_y);
+		cairo_restore(cr);
+		return (double)r.height / PANGO_SCALE;
+	}
 	cairo_device_to_user(cr, &dx, &dy);
 	cairo_save(cr);
 	cairo_move_to(cr, dx, dy);

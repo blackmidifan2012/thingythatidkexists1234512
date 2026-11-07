@@ -95,6 +95,7 @@ static int *g_tmp, g_tmp_cap;   /* scratch sequence for grids */
 static void scan_start(bool force);
 static void viewer_rebuild(const char *keep);
 static void photos_open_path(const char *path);
+static void set_wallpaper(const char *path, bool lock);
 static void slideshow_start(void);
 
 /* ---------------------------------------------------------------- helpers */
@@ -537,6 +538,8 @@ static void delete_sel_cb(int btn, void *ud) {
 	shell_invalidate();
 }
 
+void photos_set_wallpaper(const char *path, bool lock) { set_wallpaper(path, lock); }
+
 static void set_wallpaper(const char *path, bool lock) {
 	if (lock) str_copy(cfg.lock_wallpaper, sizeof cfg.lock_wallpaper, path);
 	else { str_copy(cfg.wallpaper, sizeof cfg.wallpaper, path); cfg.start_wallpaper = true; }
@@ -925,18 +928,20 @@ static void ctx_cb(int idx, void *ud) {
 	if (idx == 0) fav_set(p, !is_fav(p));
 	else if (idx == 1) confirm_delete(p);
 	else if (idx == 2) set_wallpaper(p, true);
+	else if (idx == 3) set_wallpaper(p, false);
 	free(p);
 	shell_invalidate();
 }
 
 static void open_context(UI *ui, const char *path) {
-	static const char *items[3];
+	static const char *items[4];
 	items[0] = is_fav(path) ? _("remove from favorites") : _("add to favorites");
 	items[1] = _("delete");
 	items[2] = _("use as lock screen");
+	items[3] = _("use as start background");
 	free(g_menu_path);
 	g_menu_path = xstrdup(path);
-	dialog_menu(ui->p.x, ui->p.y, items, 3, ctx_cb, NULL);
+	dialog_menu(ui->p.x, ui->p.y, items, 4, ctx_cb, NULL);
 }
 
 static void thumb_draw(UI *ui, Rect r, const char *path, bool pressed) {

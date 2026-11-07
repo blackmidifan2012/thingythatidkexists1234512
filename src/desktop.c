@@ -155,9 +155,16 @@ static int app_cmp(const void *x, const void *y) {
 	return strcmp(a->fold_name, b->fold_name);
 }
 
+/* Uninstalled apps: running views and lists may still point at them, so they are
+ * kept (it is a handful of small structs at most). */
+static VEC(DesktopApp *) g_retired;
+
 void desktop_scan(void) {
-	for (int i = 0; i < g_apps.len; i++) app_free(g_apps.items[i]);
-	g_apps.len = 0;
+	/* rescans keep the existing entries so pointers held elsewhere stay valid */
+	DesktopApp **old = g_apps.items;
+	int nold = g_apps.len;
+	g_apps.items = NULL;
+	g_apps.len = g_apps.cap = 0;
 	int n;
 	char **dirs = data_dirs(&n);
 	for (int i = 0; i < n; i++) {
@@ -165,8 +172,62 @@ void desktop_scan(void) {
 		scan_dir(ad, ad, "");
 		free(ad);
 	}
+	for (int i = 0; i < g_apps.len; i++) {
+		for (int j = 0; j < nold; j++) {
+			if (old[j] && str_eq(old[j]->id, g_apps.items[i]->id)) {
+				app_free(g_apps.items[i]);
+				g_apps.items[i] = old[j];
+				old[j] = NULL;
+				break;
+			}
+		}
+	}
+	for (int j = 0; j < nold; j++)
+		if (old[j]) vec_push(&g_retired, old[j]);
+	free(old);
 	if (g_apps.len) qsort(g_apps.items, (size_t)g_apps.len, sizeof(DesktopApp *), app_cmp);
 	LOGI("found %d desktop applications", g_apps.len);
+}
+
+/* New installs show up without a restart: adding, removing or renaming a .desktop
+ * file changes its directory's mtime, and a few stat()s every 3 s cost nothing. */
+static struct timespec g_dir_mtime[24];
+static void (*g_on_change)(void);
+
+static bool apps_dirs_changed(void) {
+	int n;
+	char **dirs = data_dirs(&n);
+	bool changed = false;
+	for (int i = 0; i < n && i < 24; i++) {
+		char *ad = path_join(dirs[i], "applications");
+		struct stat st;
+		struct timespec t = {0};
+		if (stat(ad, &st) == 0) t = st.st_mtim;
+		if (t.tv_sec != g_dir_mtime[i].tv_sec || t.tv_nsec != g_dir_mtime[i].tv_nsec) changed = true;
+		g_dir_mtime[i] = t;
+		free(ad);
+	}
+	return changed;
+}
+
+static void watch_tick(void *ud) {
+	(void)ud;
+	if (!apps_dirs_changed()) return;
+	desktop_scan();
+	if (g_on_change) g_on_change();
+}
+
+void desktop_watch(void (*on_change)(void)) {
+	g_on_change = on_change;
+	/* make sure the per-user folder exists so apps installed there are noticed */
+	const char *home = getenv("HOME");
+	if (home) {
+		char *p = xasprintf("%s/.local/share/applications", home);
+		mkdir_p(p);
+		free(p);
+	}
+	apps_dirs_changed();
+	timer_add(3000, true, watch_tick, NULL);
 }
 
 int desktop_count(void) { return g_apps.len; }

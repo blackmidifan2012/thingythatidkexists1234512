@@ -10,6 +10,7 @@
 #include "../util.h"
 
 #include <ctype.h>
+#include <strings.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -661,7 +662,18 @@ static void toast(const char *body) { shell_toast(_("Files"), body, _("Files"));
 
 static bool can_open_files(void) { return proc_exists("xdg-open") || desktop_default_browser(); }
 
+/* pictures the built-in Photos viewer can decode */
+static bool viewable_picture(const char *path) {
+	const char *e = strrchr(path, '.');
+	if (!e) return false;
+	static const char *X[] = {".jpg", ".jpeg", ".png", ".gif", ".bmp"};
+	for (size_t i = 0; i < sizeof X / sizeof *X; i++)
+		if (strcasecmp(e, X[i]) == 0) return true;
+	return false;
+}
+
 static void open_file(const char *path) {
+	if (viewable_picture(path)) { shell_open_builtin("photos", path); return; }
 	if (!can_open_files()) { toast(_("There's no app installed that can open this file.")); return; }
 	open_uri(path);
 }
@@ -1034,7 +1046,7 @@ static void open_props(const char *path, const Level *from) {
 
 /* ---------------------------------------------------------- context menu - */
 
-enum { A_OPEN, A_TERMINAL, A_RENAME, A_COPY, A_CUT, A_DELETE, A_PROPS, A_PASTE_INTO };
+enum { A_OPEN, A_TERMINAL, A_RENAME, A_COPY, A_CUT, A_DELETE, A_PROPS, A_PASTE_INTO, A_WALL_LOCK, A_WALL_START };
 static int g_menu_act[10];
 
 static char **one_path(const char *p) {
@@ -1063,6 +1075,8 @@ static void menu_cb(int idx, void *ud) {
 	case A_DELETE: delete_paths(&p, 1, false); break;
 	case A_PROPS: open_props(p, l); break;
 	case A_PASTE_INTO: paste_into(p); break;
+	case A_WALL_LOCK: photos_set_wallpaper(p, true); break;
+	case A_WALL_START: photos_set_wallpaper(p, false); break;
 	}
 	free(p);
 }
@@ -1073,9 +1087,14 @@ static void open_menu(const char *path, bool folder, bool location, double x, do
 	const char *items[10];
 	int n = 0;
 	static const char *labels[] = {N_("open"), N_("open terminal here"), N_("rename"), N_("copy"), N_("cut"),
-		N_("delete"), N_("properties"), N_("paste into folder")};
+		N_("delete"), N_("properties"), N_("paste into folder"), N_("use as lock screen"),
+		N_("use as start background")};
 #define ADD(a) do { g_menu_act[n] = (a); items[n++] = tr(labels[a]); } while (0)
 	ADD(A_OPEN);
+	if (!folder && viewable_picture(path)) {
+		ADD(A_WALL_LOCK);
+		ADD(A_WALL_START);
+	}
 	if (folder && g_clip.n && !g_op) ADD(A_PASTE_INTO);
 	if (folder && terminal_available()) ADD(A_TERMINAL);
 	if (!location) {

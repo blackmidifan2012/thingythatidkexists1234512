@@ -28,6 +28,8 @@ static bool g_jump_open;
 static Anim g_jump_anim;
 static Entry *g_menu_entry;
 
+void applist_apps_changed(void) { g_dirty = true; }
+
 void applist_reset(void) {
 	g_search[0] = 0;
 	g_jump_open = false;

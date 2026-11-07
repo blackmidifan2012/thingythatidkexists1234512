@@ -101,3 +101,5 @@
 	{"folder name", "klasör adı"},
 	{"New folder", "Yeni klasör"},
 	{"sort by", "sıralama ölçütü"},
+	{"use as lock screen", "kilit ekranı yap"},
+	{"use as start background", "başlangıç arka planı yap"},

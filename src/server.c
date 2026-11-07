@@ -111,6 +111,11 @@ static bool server_init(void) {
 	return true;
 }
 
+static void apps_changed(void) {
+	applist_apps_changed();
+	shell_invalidate();
+}
+
 int server_main(void) {
 	config_init();
 	i18n_init(cfg.lang);
@@ -123,6 +128,7 @@ int server_main(void) {
 	sys_init(srv.opt_demo);
 	desktop_scan();
 	shell_init();
+	desktop_watch(apps_changed);
 
 	srv.socket = wl_display_add_socket_auto(srv.display);
 	if (!srv.socket) { LOGE("unable to create the wayland socket"); return 1; }

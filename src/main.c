@@ -2,9 +2,42 @@
 #include "util.h"
 
 #include <getopt.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 int server_main(void);
+
+/* A fresh phone user has no Documents/Downloads/...: create them, and register them
+ * in user-dirs.dirs (unless the user already has one) so apps save in the same place. */
+static void ensure_user_dirs(void) {
+	const char *home = getenv("HOME");
+	if (!home || !*home) return;
+	static const char *D[][2] = {
+		{"DESKTOP", "Desktop"}, {"DOCUMENTS", "Documents"}, {"DOWNLOAD", "Downloads"},
+		{"MUSIC", "Music"}, {"PICTURES", "Pictures"}, {"VIDEOS", "Videos"},
+		{"TEMPLATES", "Templates"}, {"PUBLICSHARE", "Public"},
+	};
+	char path[4096];
+	for (size_t i = 0; i < sizeof D / sizeof *D; i++) {
+		snprintf(path, sizeof path, "%s/%s", home, D[i][1]);
+		mkdir_p(path);
+	}
+	snprintf(path, sizeof path, "%s/Pictures/Screenshots", home);
+	mkdir_p(path);
+	const char *xdg = getenv("XDG_CONFIG_HOME");
+	char cfgdir[4000];
+	if (xdg && *xdg) snprintf(cfgdir, sizeof cfgdir, "%s", xdg);
+	else snprintf(cfgdir, sizeof cfgdir, "%s/.config", home);
+	mkdir_p(cfgdir);
+	snprintf(path, sizeof path, "%s/user-dirs.dirs", cfgdir);
+	if (access(path, F_OK) == 0) return;
+	FILE *f = fopen(path, "w");
+	if (!f) return;
+	fprintf(f, "# written by metrowl\n");
+	for (size_t i = 0; i < sizeof D / sizeof *D; i++) fprintf(f, "XDG_%s_DIR=\"$HOME/%s\"\n", D[i][0], D[i][1]);
+	fclose(f);
+}
 
 static void usage(const char *prog) {
 	printf(
@@ -52,5 +85,6 @@ int main(int argc, char **argv) {
 		}
 	}
 	wlr_log_init(level, NULL);
+	ensure_user_dirs();
 	return server_main();
 }

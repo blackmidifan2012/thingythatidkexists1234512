@@ -32,6 +32,7 @@ typedef struct AppDef {
 typedef struct { const char *title; const char *link; const char *keywords; } SettingsPageInfo;
 int settings_page_list(const SettingsPageInfo **out);
 void photos_rescan(void);
+void photos_set_wallpaper(const char *path, bool lock);   /* lock screen or Start background */
 /* Opens Photos as a picture chooser; cb runs with the chosen path (NULL = cancelled) and
  * the caller's app is reopened afterwards. */
 void photos_pick(const char *return_app, void (*cb)(const char *path, void *ud), void *ud);

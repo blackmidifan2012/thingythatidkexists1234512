@@ -170,6 +170,7 @@ void start_launch_rect(const char *app, Rect *r, Color *c);
 /* ---- applist.c */
 void applist_draw(UI *ui, Rect area);
 void applist_reset(void);
+void applist_apps_changed(void);       /* installed apps changed: rebuild, keep scroll */
 bool applist_back(void);
 
 /* ---- wallpaper.c */

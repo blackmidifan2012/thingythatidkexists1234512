@@ -1,6 +1,6 @@
 #!/bin/sh
 # Builds and installs metrowl on postmarketOS (Alpine based, any architecture:
-# aarch64, armv7, x86_64). Installs only the build tools and libraries metrowl needs;
+# aarch64, armv7, x86_64), with either OpenRC or systemd. Installs only the build tools and libraries metrowl needs;
 # the build tools can be removed again with --clean-tools after installing.
 #
 #   sudo sh packaging/install-postmarketos.sh               build + install
@@ -29,27 +29,38 @@ WLR=wlroots-dev
 for p in wlroots0.19-dev wlroots0.18-dev; do
 	if apk search -q -e "$p" | grep -q .; then WLR=$p; break; fi
 done
-# notifications need an sd-bus implementation: elogind on OpenRC, systemd if used
-SDBUS=elogind-dev
-if apk info -e systemd >/dev/null 2>&1; then SDBUS=systemd-dev; fi
+# postmarketOS can boot with OpenRC (default) or systemd. Notifications need an sd-bus
+# library: elogind on OpenRC, libsystemd on systemd; seat access comes from seatd on
+# OpenRC and from systemd-logind on systemd.
+if [ -d /run/systemd/system ]; then INIT=systemd; else INIT=openrc; fi
+if [ "$INIT" = systemd ]; then SDBUS=systemd-dev; RUNTIME="dbus"; else SDBUS=elogind-dev; RUNTIME="seatd dbus"; fi
+echo "Init system: $INIT"
 
 # build tools in a virtual group so they can be removed in one go
 apk add --virtual .metrowl-build build-base meson samurai pkgconf wayland-dev \
 	wayland-protocols "$WLR" libxkbcommon-dev libinput-dev libdrm-dev pixman-dev \
 	cairo-dev pango-dev fontconfig-dev glib-dev librsvg-dev "$SDBUS"
 # runtime pieces that are not pulled in by the libraries above
-apk add seatd dbus
+apk add $RUNTIME
 
 meson setup "$BUILD" "$SRC" --buildtype=release --prefix=/usr --wipe >/dev/null 2>&1 ||
 	meson setup "$BUILD" "$SRC" --buildtype=release --prefix=/usr
 ninja -C "$BUILD"
 meson install -C "$BUILD"
 
-# the compositor needs seat access: run seatd and add the user to its group
-rc-update add seatd default >/dev/null 2>&1 || true
-rc-service seatd start >/dev/null 2>&1 || true
+# the compositor needs seat access
 USER_NAME=${SUDO_USER:-$(logname 2>/dev/null || true)}
-if [ -n "$USER_NAME" ] && [ "$USER_NAME" != root ]; then addgroup "$USER_NAME" seat 2>/dev/null || true; fi
+if [ "$INIT" = systemd ]; then
+	# systemd-logind hands out the seat to the logged-in user; just make sure it runs
+	systemctl enable --now systemd-logind >/dev/null 2>&1 || true
+	if [ -n "$USER_NAME" ] && [ "$USER_NAME" != root ]; then
+		for g in video input; do addgroup "$USER_NAME" "$g" 2>/dev/null || true; done
+	fi
+else
+	rc-update add seatd default >/dev/null 2>&1 || true
+	rc-service seatd start >/dev/null 2>&1 || true
+	if [ -n "$USER_NAME" ] && [ "$USER_NAME" != root ]; then addgroup "$USER_NAME" seat 2>/dev/null || true; fi
+fi
 
 echo
 echo "metrowl installed. Log in on a text console (TTY) and run: metrowl-session"

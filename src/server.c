@@ -128,7 +128,7 @@ int server_main(void) {
 	sys_init(srv.opt_demo);
 	desktop_scan();
 	shell_init();
-	desktop_watch(apps_changed);
+	desktop_watch(apps_changed, shell_invalidate);
 
 	srv.socket = wl_display_add_socket_auto(srv.display);
 	if (!srv.socket) { LOGE("unable to create the wayland socket"); return 1; }

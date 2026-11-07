@@ -193,6 +193,7 @@ void desktop_scan(void) {
  * file changes its directory's mtime, and a few stat()s every 3 s cost nothing. */
 static struct timespec g_dir_mtime[24];
 static void (*g_on_change)(void);
+static void (*g_on_icon)(void);
 
 static bool apps_dirs_changed(void) {
 	int n;
@@ -214,11 +215,15 @@ static void watch_tick(void *ud) {
 	(void)ud;
 	if (!apps_dirs_changed()) return;
 	desktop_scan();
+	for (int i = 0; i < g_apps.len; i++) desktop_icon(g_apps.items[i], 128);
 	if (g_on_change) g_on_change();
 }
 
-void desktop_watch(void (*on_change)(void)) {
+void desktop_watch(void (*on_change)(void), void (*on_icon)(void)) {
 	g_on_change = on_change;
+	g_on_icon = on_icon;
+	/* warm the icons now so the app list does not fill in while it is first shown */
+	for (int i = 0; i < g_apps.len; i++) desktop_icon(g_apps.items[i], 128);
 	/* make sure the per-user folder exists so apps installed there are noticed */
 	const char *home = getenv("HOME");
 	if (home) {
@@ -394,15 +399,36 @@ static char *find_icon_file(const char *key) {
 	return NULL;
 }
 
+/* Searching the icon themes and decoding SVGs takes long on a phone CPU and used to
+ * stall the first frames of Start and the app list: load on a worker thread. */
+typedef struct { DesktopApp *a; char *key; Image *img; } IconJob;
+
+
+static void icon_job(void *arg) {
+	IconJob *j = arg;
+	char *f = find_icon_file(j->key);
+	if (f) j->img = image_load_icon(f, 128);
+	free(f);
+}
+
+static void icon_done(void *arg) {
+	IconJob *j = arg;
+	j->a->icon = j->img;   /* entries are never freed once listed, see desktop_scan() */
+	free(j->key);
+	free(j);
+	if (g_on_icon) g_on_icon();
+}
+
 Image *desktop_icon(DesktopApp *a, int px) {
+	(void)px;   /* decoded once at 128 px and scaled for drawing */
 	if (a->icon || a->icon_tried) return a->icon;
 	a->icon_tried = true;
 	if (!a->icon_key) return NULL;
-	char *f = find_icon_file(a->icon_key);
-	if (!f) return NULL;
-	a->icon = image_load_icon(f, px);
-	free(f);
-	return a->icon;
+	IconJob *j = xcalloc(1, sizeof *j);
+	j->a = a;
+	j->key = xstrdup(a->icon_key);
+	job_submit(icon_job, icon_done, j);
+	return NULL;
 }
 
 /* Small cache for icons requested by name (notifications etc.). */

@@ -32,7 +32,7 @@ typedef struct {
 	bool fav, sel;
 } Photo;
 
-typedef struct { char *name, *dir; int kind, count, cover; } Album;
+typedef struct { char *name, *dir; int kind, count, cover; bool multi; /* photos outside dir too */ } Album;
 typedef struct { char *path; int64_t mtime; } Stamp;
 
 typedef struct {
@@ -335,6 +335,11 @@ static void scan_dir(Library *l, const char *dir, int depth, int max_depth, int 
 			Photo ph = {.path = p, .mtime = (int64_t)st.st_mtime, .size = (int64_t)st.st_size,
 				.album = album >= 0 ? album : album_get(l, AL_SAVED, NULL, dir),
 				.month = (tm.tm_year + 1900) * 12 + tm.tm_mon};
+			/* remember where the album lives, for the location shown under its name */
+			Album *al = &l->albums.items[ph.album];
+			size_t dl = al->dir ? strlen(al->dir) : 0;
+			if (!al->dir) al->dir = xstrdup(dir);
+			else if (!str_eq(al->dir, dir) && !(strncmp(dir, al->dir, dl) == 0 && dir[dl] == '/')) al->multi = true;
 			vec_push(&l->photos, ph);
 			p = NULL;
 		}
@@ -367,11 +372,27 @@ static void scan_run(void *arg) {
 	char *dl = user_dir("XDG_DOWNLOAD_DIR", "Downloads");
 	char *desk = user_dir("XDG_DESKTOP_DIR", "Desktop");
 	char *dcim = path_join(home_dir(), "DCIM");
+	const char *home = home_dir();
 	scan_dir(l, pics, 0, MAX_DEPTH, -1);
 	scan_dir(l, dcim, 0, MAX_DEPTH, 0);
-	if (!str_eq(dl, home_dir())) scan_dir(l, dl, 0, 0, 2);
-	if (!str_eq(desk, home_dir())) scan_dir(l, desk, 0, 0, 2);
-	free(pics); free(dl); free(desk); free(dcim);
+	if (!str_eq(dl, home)) scan_dir(l, dl, 0, 3, 2);
+	if (!str_eq(desk, home)) scan_dir(l, desk, 0, 2, 2);
+	/* every other folder in home with pictures (Documents, Wallpapers, ...) is an album */
+	char *music = user_dir("XDG_MUSIC_DIR", "Music"), *videos = user_dir("XDG_VIDEOS_DIR", "Videos");
+	DIR *hd = opendir(home);
+	struct dirent *e;
+	while (hd && (e = readdir(hd))) {
+		if (e->d_name[0] == '.' || str_eq(e->d_name, "Templates") || str_eq(e->d_name, "Public")) continue;
+		char *p = path_join(home, e->d_name);
+		struct stat st;
+		if (lstat(p, &st) == 0 && S_ISDIR(st.st_mode) && !str_eq(p, pics) && !str_eq(p, dcim) && !str_eq(p, dl) &&
+		    !str_eq(p, desk) && !str_eq(p, music) && !str_eq(p, videos))
+			scan_dir(l, p, 0, 3, album_get(l, AL_FOLDER, e->d_name, p));
+		free(p);
+	}
+	if (hd) closedir(hd);
+	scan_dir(l, home, 0, 0, 2);   /* loose pictures right in home */
+	free(pics); free(dl); free(desk); free(dcim); free(music); free(videos);
 	qsort(l->photos.items, (size_t)l->photos.len, sizeof(Photo), cmp_photo);
 	/* folder albums sorted by name (stable index remap) */
 	int na = l->albums.len;
@@ -1058,8 +1079,10 @@ static void albums_draw(UI *ui, Rect view) {
 		bool pr = ui_pressed(ui, id);
 		thumb_draw(ui, r, g_lib->photos.items[a->cover].path, pr);
 		gfx_text(cr, album_title(a), r.x, rect_bottom(r) + 6, 20, FW_SEMILIGHT, ui->th.fg, TA_LEFT, tile, 1);
-		char cnt[32];
-		snprintf(cnt, sizeof cnt, "%d", a->count);
+		char cnt[600], loc[512] = "";
+		if (a->dir) tilde_path(a->dir, loc, sizeof loc);
+		if (*loc) snprintf(cnt, sizeof cnt, "%d  ·  %s%s", a->count, loc, a->multi ? _(" and more") : "");
+		else snprintf(cnt, sizeof cnt, "%d", a->count);
 		gfx_text(cr, cnt, r.x, rect_bottom(r) + 32, 15, FW_REGULAR, ui->th.sub, TA_LEFT, tile, 1);
 		if (ui_clicked(ui, id)) {
 			g_album_kind = a->kind;

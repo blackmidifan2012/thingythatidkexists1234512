@@ -20,8 +20,9 @@ typedef struct DesktopApp {
 } DesktopApp;
 
 void desktop_scan(void);
-/* Rescans whenever an applications folder changes, then calls on_change. */
-void desktop_watch(void (*on_change)(void));
+/* Rescans whenever an applications folder changes, then calls on_change; on_icon
+ * runs whenever an app icon finished loading in the background. */
+void desktop_watch(void (*on_change)(void), void (*on_icon)(void));
 int desktop_count(void);
 DesktopApp *desktop_get(int i);
 DesktopApp *desktop_find(const char *id);

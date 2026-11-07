@@ -39,3 +39,4 @@
 	{"unfavorite", "çıkar"},
 	{"use as lock screen", "kilit ekranı yap"},
 	{"use as start background", "başlangıç arka planı yap"},
+	{" and more", " ve diğerleri"},

@@ -683,6 +683,11 @@ void shell_toast(const char *title, const char *body, const char *app_name) {
 	shell_notify(app_name ? app_name : "", title, body ? body : "", NULL, NULL, 1, 0, true);
 }
 
+void shell_post(const char *app_name, const char *title, const char *body) {
+	uint32_t id = shell_notify(app_name ? app_name : "", title, body ? body : "", NULL, NULL, 1, 0, true);
+	for (int i = 0; i < sh.notifs.len; i++) if (sh.notifs.items[i]->id == id) sh.notifs.items[i]->keep = true;
+}
+
 /* --------------------------------------------------------- screenshots ---- */
 
 static void screenshot_done(cairo_surface_t *surf, void *ud) {
@@ -696,7 +701,7 @@ static void screenshot_done(cairo_surface_t *surf, void *ud) {
 	strftime(name, sizeof name, "Screenshot_%Y%m%d_%H%M%S.png", &tm);
 	char *path = path_join(dir, name);
 	if (cairo_surface_write_to_png(surf, path) == CAIRO_STATUS_SUCCESS)
-		shell_toast(_("Screenshot saved"), name, _("Photos"));
+		shell_post(_("Photos"), _("Screenshot saved"), name);
 	else
 		shell_toast(_("Screenshot failed"), path, NULL);
 	free(path);
@@ -771,6 +776,7 @@ void shell_pointer(int type, double x, double y, int source) {
 	switch (type) {
 	case 0:
 		ui_pointer_down(ui, x, y, now, source);
+		lock_pointer_down(ui);
 		timer_set(g_longpress_timer, 480);
 		break;
 	case 1:
@@ -890,12 +896,18 @@ static void draw_overlays(UI *ui, bool ext_visible) {
 		ui->layer = UL_DIALOG;
 		clock_overlay_draw(ui, R(0, 0, sh.w, sh.h));
 	}
+	if (phone_overlay_active()) {
+		ui->layer = UL_DIALOG;
+		phone_overlay_draw(ui, R(0, 0, sh.w, sh.h));
+	}
 	ui->layer = UL_TOAST;
 	chrome_toast_draw(ui);
 	chrome_volume_hud(ui);
 	draw_flash(ui);
 	(void)ext_visible;
 }
+
+static void rotation_update(void);
 
 bool shell_render(double now) {
 	if (!sh.dirty && !g_was_animating && trn.phase == TR_NONE) return false;
@@ -953,7 +965,53 @@ bool shell_render(double now) {
 	if (!more && g_snap) { cairo_surface_destroy(g_snap); g_snap = NULL; }
 	if (!more && g_trn_snap) { cairo_surface_destroy(g_trn_snap); g_trn_snap = NULL; }
 	if (ui->redraw) sh.dirty = true;
+	rotation_update();
 	return more;
+}
+
+/* -------------------------------------------------------------- rotation -- */
+
+/* Linux apps for which turning the phone makes sense (desktop file categories). Start,
+ * the switcher and the built-in apps always stay upright. */
+static bool view_rotates(const View *v) {
+	const char *c = v && v->app ? v->app->categories : NULL;
+	if (!c) return false;
+	static const char *const ROT[] = {"WebBrowser", "Network", "Video", "Player", "Game", "Viewer", "Graphics"};
+	for (size_t i = 0; i < ARRAY_LEN(ROT); i++) if (strstr(c, ROT[i])) return true;
+	return false;
+}
+
+static Timer *g_rot_timer;
+static int g_orient = ORIENT_NORMAL, g_orient_seen = ORIENT_NORMAL;
+static bool g_rot_polling;
+
+static bool rotation_wanted(void) {
+	return cfg.auto_rotate && !sh.locked && !sh.screen_off && sh.screen == SCR_EXT && sh.cur_view &&
+	       trn.phase == TR_NONE && !dialog_active() && view_rotates(sh.cur_view) && sys_has_accel();
+}
+
+static void rotation_tick(void *ud) {
+	(void)ud;
+	bool want = rotation_wanted();
+	int o = want ? sys_orientation(g_orient) : ORIENT_NORMAL;
+	if (o == ORIENT_BOTTOM_UP) o = g_orient;   /* never upside down, like phones */
+	/* turn once two readings agree (no flipping while the phone is moved around), but go
+	 * back upright at once when the app leaves */
+	if (o != g_orient && (!want || o == g_orient_seen)) {
+		g_orient = o;
+		output_set_orientation(o);
+	}
+	g_orient_seen = o;
+	if (!want && g_orient == ORIENT_NORMAL) { timer_set(g_rot_timer, 0); g_rot_polling = false; }   /* idle until needed */
+}
+
+/* Called after each frame: polls the sensor only while a rotating app is in front. */
+static void rotation_update(void) {
+	bool want = rotation_wanted();
+	if (!want && g_orient == ORIENT_NORMAL) return;
+	if (!g_rot_timer) g_rot_timer = timer_add(0, true, rotation_tick, NULL);
+	if (!want) { timer_set(g_rot_timer, 1); g_rot_polling = false; }   /* back upright right away */
+	else if (!g_rot_polling) { timer_set(g_rot_timer, 400); g_rot_polling = true; }
 }
 
 /* ---------------------------------------------------------------- timers -- */
@@ -991,7 +1049,7 @@ static void battery_check(void *ud) {
 	warned = level;
 	char body[96];
 	snprintf(body, sizeof body, _("%d%% battery remaining. Connect your charger."), b.pct);
-	shell_notify(_("Battery"), _("Battery low"), body, "", "", 2, 0, true);
+	shell_post(_("Battery"), _("Battery low"), body);
 	app_play_event(EV_WARN);
 }
 

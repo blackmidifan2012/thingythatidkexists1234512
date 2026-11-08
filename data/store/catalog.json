@@ -669,6 +669,896 @@
    "description": "Meld compares files and folders side by side and helps you merge changes. It works with Git and other version control systems.",
    "color": "#6D8764",
    "featured": false
+  },
+  {
+   "id": "org.gnome.Fractal",
+   "name": "Fractal",
+   "developer": "The GNOME Project",
+   "category": "social",
+   "summary": "Chat on Matrix",
+   "description": "A Matrix messaging app for GNOME that adapts to phones: rooms, encryption, pictures and replies.",
+   "color": "#1BA1E2",
+   "featured": true
+  },
+  {
+   "id": "de.schmidhuberj.Flare",
+   "name": "Flare",
+   "developer": "Julian Schmidhuber",
+   "category": "social",
+   "summary": "Chat with your friends on Signal",
+   "description": "An unofficial Signal client made for Linux phones and desktops.",
+   "color": "#1BA1E2",
+   "featured": false
+  },
+  {
+   "id": "im.dino.Dino",
+   "name": "Dino",
+   "developer": "Dino Team",
+   "category": "social",
+   "summary": "Modern Jabber/XMPP chat",
+   "description": "Send messages, files and encrypted chats over XMPP with a clean, phone friendly interface.",
+   "color": "#1BA1E2",
+   "featured": false
+  },
+  {
+   "id": "org.kde.tokodon",
+   "name": "Tokodon",
+   "developer": "KDE",
+   "category": "social",
+   "summary": "Browse the Fediverse",
+   "description": "A Mastodon client that works well on phones: timelines, notifications and posting.",
+   "color": "#1BA1E2",
+   "featured": false
+  },
+  {
+   "id": "org.kde.neochat",
+   "name": "NeoChat",
+   "developer": "KDE",
+   "category": "social",
+   "summary": "Chat with your friends on Matrix",
+   "description": "A Matrix client from KDE built with Kirigami, so it has a real phone layout.",
+   "color": "#1BA1E2",
+   "featured": false
+  },
+  {
+   "id": "org.gajim.Gajim",
+   "name": "Gajim",
+   "developer": "Gajim Team",
+   "category": "social",
+   "summary": "Fully-featured XMPP chat",
+   "description": "Group chats, file transfer and end-to-end encryption for XMPP.",
+   "color": "#1BA1E2",
+   "featured": false
+  },
+  {
+   "id": "im.kaidan.kaidan",
+   "name": "Kaidan",
+   "developer": "KDE",
+   "category": "social",
+   "summary": "Modern chat app for every device",
+   "description": "A simple XMPP chat that adapts to phones.",
+   "color": "#1BA1E2",
+   "featured": false
+  },
+  {
+   "id": "io.gitlab.news_flash.NewsFlash",
+   "name": "NewsFlash",
+   "developer": "Jan Lukas Gernert",
+   "category": "social",
+   "summary": "Keep up with your feeds",
+   "description": "An RSS reader that syncs with Feedly, Miniflux, Nextcloud News and more.",
+   "color": "#1BA1E2",
+   "featured": false
+  },
+  {
+   "id": "io.bassi.Amberol",
+   "name": "Amberol",
+   "developer": "Emmanuele Bassi",
+   "category": "music+video",
+   "summary": "Plays music, and nothing else",
+   "description": "A small music player that fits phones: drop some songs and press play.",
+   "color": "#E51400",
+   "featured": true
+  },
+  {
+   "id": "org.gnome.Lollypop",
+   "name": "Lollypop",
+   "developer": "Cédric Bellegarde",
+   "category": "music+video",
+   "summary": "Play and organize your music collection",
+   "description": "Browse by artist, album and genre, with lyrics and party mode.",
+   "color": "#E51400",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Music",
+   "name": "Music",
+   "developer": "The GNOME Project",
+   "category": "music+video",
+   "summary": "Play and organize your music collection",
+   "description": "GNOME's music player with albums, artists and playlists.",
+   "color": "#E51400",
+   "featured": false
+  },
+  {
+   "id": "org.kde.elisa",
+   "name": "Elisa",
+   "developer": "KDE",
+   "category": "music+video",
+   "summary": "Music player",
+   "description": "A simple music player from KDE with a mobile mode.",
+   "color": "#E51400",
+   "featured": false
+  },
+  {
+   "id": "com.github.rafostar.Clapper",
+   "name": "Clapper",
+   "developer": "Rafał Dzięgiel",
+   "category": "music+video",
+   "summary": "Simple and modern video player",
+   "description": "A GStreamer video player with a touch friendly, adaptive interface.",
+   "color": "#E51400",
+   "featured": false
+  },
+  {
+   "id": "io.github.celluloid_player.Celluloid",
+   "name": "Celluloid",
+   "developer": "The Celluloid Developers",
+   "category": "music+video",
+   "summary": "Watch videos",
+   "description": "A simple GTK front end for mpv.",
+   "color": "#E51400",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Showtime",
+   "name": "Video Player",
+   "developer": "The GNOME Project",
+   "category": "music+video",
+   "summary": "Watch videos",
+   "description": "GNOME's new video player, made for phones and desktops alike.",
+   "color": "#E51400",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Decibels",
+   "name": "Audio Player",
+   "developer": "The GNOME Project",
+   "category": "music+video",
+   "summary": "Play audio files",
+   "description": "A simple player for single audio files and recordings.",
+   "color": "#E51400",
+   "featured": false
+  },
+  {
+   "id": "org.kde.kasts",
+   "name": "Kasts",
+   "developer": "KDE",
+   "category": "music+video",
+   "summary": "Podcast application",
+   "description": "Subscribe to podcasts and listen on your phone.",
+   "color": "#E51400",
+   "featured": false
+  },
+  {
+   "id": "org.kde.plasmatube",
+   "name": "PlasmaTube",
+   "developer": "KDE",
+   "category": "music+video",
+   "summary": "Watch YouTube videos",
+   "description": "A privacy friendly YouTube player built for Plasma Mobile.",
+   "color": "#E51400",
+   "featured": false
+  },
+  {
+   "id": "org.nickvision.tubeconverter",
+   "name": "Parabolic",
+   "developer": "Nickvision",
+   "category": "music+video",
+   "summary": "Download web video and audio",
+   "description": "Download videos and music from YouTube and many other sites.",
+   "color": "#E51400",
+   "featured": false
+  },
+  {
+   "id": "dev.alextren.Spot",
+   "name": "Spot",
+   "developer": "Alexandre Trendel",
+   "category": "music+video",
+   "summary": "Listen to music on Spotify",
+   "description": "A native Spotify client (needs Spotify Premium).",
+   "color": "#E51400",
+   "featured": false
+  },
+  {
+   "id": "com.github.geigi.cozy",
+   "name": "Cozy",
+   "developer": "Julian Geywitz",
+   "category": "music+video",
+   "summary": "Listen to audio books",
+   "description": "An audiobook player that remembers where you stopped.",
+   "color": "#E51400",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.gitlab.YaLTeR.VideoTrimmer",
+   "name": "Video Trimmer",
+   "developer": "Ivan Molodetskikh",
+   "category": "music+video",
+   "summary": "Trim videos quickly",
+   "description": "Cut out a part of a video without re-encoding it.",
+   "color": "#E51400",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Shotwell",
+   "name": "Shotwell",
+   "developer": "Shotwell Developers",
+   "category": "photo",
+   "summary": "Organize your photos",
+   "description": "Import, organize, edit and share your photos.",
+   "color": "#D80073",
+   "featured": false
+  },
+  {
+   "id": "org.kde.digikam",
+   "name": "digiKam",
+   "developer": "KDE",
+   "category": "photo",
+   "summary": "Professional photo management",
+   "description": "Manage, tag and edit large photo collections, including RAW files.",
+   "color": "#D80073",
+   "featured": false
+  },
+  {
+   "id": "com.github.PintaProject.Pinta",
+   "name": "Pinta",
+   "developer": "Pinta Project",
+   "category": "photo",
+   "summary": "Edit images and paint digitally",
+   "description": "An easy drawing and image editing app with layers and effects.",
+   "color": "#D80073",
+   "featured": false
+  },
+  {
+   "id": "com.github.huluti.Curtail",
+   "name": "Curtail",
+   "developer": "Hugo Posnic",
+   "category": "photo",
+   "summary": "Compress your images",
+   "description": "Make your pictures smaller without losing quality.",
+   "color": "#D80073",
+   "featured": false
+  },
+  {
+   "id": "org.kde.koko",
+   "name": "Koko",
+   "developer": "KDE",
+   "category": "photo",
+   "summary": "Image gallery",
+   "description": "A photo viewer and gallery made for phones and tablets.",
+   "color": "#D80073",
+   "featured": false
+  },
+  {
+   "id": "com.rawtherapee.RawTherapee",
+   "name": "RawTherapee",
+   "developer": "RawTherapee Development Team",
+   "category": "photo",
+   "summary": "Raw image processing",
+   "description": "Develop RAW photos from your camera with professional tools.",
+   "color": "#D80073",
+   "featured": false
+  },
+  {
+   "id": "io.gitlab.theevilskeleton.Upscaler",
+   "name": "Upscaler",
+   "developer": "Hari Rana",
+   "category": "photo",
+   "summary": "Upscale and enhance images",
+   "description": "Make low resolution pictures sharper with AI upscaling.",
+   "color": "#D80073",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Papers",
+   "name": "Papers",
+   "developer": "The GNOME Project",
+   "category": "productivity",
+   "summary": "Read documents",
+   "description": "GNOME's document viewer for PDF and other formats, with a phone layout.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Evince",
+   "name": "Document Viewer",
+   "developer": "The GNOME Project",
+   "category": "productivity",
+   "summary": "View multi-page documents",
+   "description": "Read PDF, PostScript, DjVu and comic book files.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Contacts",
+   "name": "Contacts",
+   "developer": "The GNOME Project",
+   "category": "productivity",
+   "summary": "Manage your contacts",
+   "description": "Keep your address book, also in sync with online accounts.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Geary",
+   "name": "Geary",
+   "developer": "Geary Development Team",
+   "category": "productivity",
+   "summary": "Send and receive email",
+   "description": "A light email app that groups messages into conversations.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Evolution",
+   "name": "Evolution",
+   "developer": "The GNOME Project",
+   "category": "productivity",
+   "summary": "Manage your email, contacts and schedule",
+   "description": "Email, calendar, contacts and tasks in one app.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Todo",
+   "name": "Endeavour",
+   "developer": "The GNOME Project",
+   "category": "productivity",
+   "summary": "Manage your tasks",
+   "description": "A simple to-do list app.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "io.github.mrvladus.List",
+   "name": "Errands",
+   "developer": "Vlad Krupinskii",
+   "category": "productivity",
+   "summary": "Manage your tasks",
+   "description": "A to-do list that adapts to phones and syncs with Nextcloud.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "io.github.alainm23.planify",
+   "name": "Planify",
+   "developer": "Alain M.",
+   "category": "productivity",
+   "summary": "Forget about forgetting things",
+   "description": "A task manager with Todoist and Nextcloud sync.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.World.Iotas",
+   "name": "Iotas",
+   "developer": "Chris Heywood",
+   "category": "productivity",
+   "summary": "Simple note taking",
+   "description": "Write notes in Markdown and sync them with Nextcloud Notes.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "com.toolstack.Folio",
+   "name": "Folio",
+   "developer": "Greg Ross",
+   "category": "productivity",
+   "summary": "Take notes in Markdown",
+   "description": "A beautiful notes app with notebooks.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.gitlab.somas.Apostrophe",
+   "name": "Apostrophe",
+   "developer": "Manuel Genovés",
+   "category": "productivity",
+   "summary": "Edit Markdown in style",
+   "description": "A distraction free Markdown editor with live preview.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "net.cozic.joplin_desktop",
+   "name": "Joplin",
+   "developer": "Laurent Cozic",
+   "category": "productivity",
+   "summary": "Note taking and to-do app",
+   "description": "Notes and to-dos with sync and end-to-end encryption.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "com.calibre_ebook.calibre",
+   "name": "calibre",
+   "developer": "Kovid Goyal",
+   "category": "productivity",
+   "summary": "E-book manager",
+   "description": "Organize, convert and read e-books.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "org.zotero.Zotero",
+   "name": "Zotero",
+   "developer": "Corporation for Digital Scholarship",
+   "category": "productivity",
+   "summary": "Collect, organize, cite and share research",
+   "description": "Your personal research assistant.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "app.drey.Dialect",
+   "name": "Dialect",
+   "developer": "The Dialect Authors",
+   "category": "productivity",
+   "summary": "Translate between languages",
+   "description": "A translation app that fits phones, using Google, LibreTranslate and more.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "com.belmoussaoui.Authenticator",
+   "name": "Authenticator",
+   "developer": "Bilal Elmoussaoui",
+   "category": "productivity",
+   "summary": "Generate two-factor codes",
+   "description": "Two-factor authentication codes for your accounts, with a phone layout.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.World.Secrets",
+   "name": "Secrets",
+   "developer": "The GNOME Project",
+   "category": "productivity",
+   "summary": "Manage your passwords",
+   "description": "A password manager that uses the KeePass format.",
+   "color": "#0050EF",
+   "featured": false
+  },
+  {
+   "id": "org.kde.angelfish",
+   "name": "Angelfish",
+   "developer": "KDE",
+   "category": "internet",
+   "summary": "Web browser for phones",
+   "description": "A web browser made for Plasma Mobile, with a real phone layout.",
+   "color": "#00ABA9",
+   "featured": true
+  },
+  {
+   "id": "org.gnome.Epiphany",
+   "name": "Web",
+   "developer": "The GNOME Project",
+   "category": "internet",
+   "summary": "Browse the web",
+   "description": "GNOME's simple web browser, which adapts to phones.",
+   "color": "#00ABA9",
+   "featured": false
+  },
+  {
+   "id": "org.kde.falkon",
+   "name": "Falkon",
+   "developer": "KDE",
+   "category": "internet",
+   "summary": "Web browser",
+   "description": "A fast browser built on QtWebEngine.",
+   "color": "#00ABA9",
+   "featured": false
+  },
+  {
+   "id": "io.gitlab.librewolf-community",
+   "name": "LibreWolf",
+   "developer": "LibreWolf Community",
+   "category": "internet",
+   "summary": "A custom version of Firefox",
+   "description": "Firefox focused on privacy, security and freedom.",
+   "color": "#00ABA9",
+   "featured": false
+  },
+  {
+   "id": "org.torproject.torbrowser-launcher",
+   "name": "Tor Browser",
+   "developer": "Tor Project",
+   "category": "internet",
+   "summary": "Browse privately with Tor",
+   "description": "Downloads and runs the Tor Browser.",
+   "color": "#00ABA9",
+   "featured": false
+  },
+  {
+   "id": "com.github.hugolabe.Wike",
+   "name": "Wike",
+   "developer": "Hugo Olabera",
+   "category": "internet",
+   "summary": "Search and read Wikipedia articles",
+   "description": "A Wikipedia reader that fits phones.",
+   "color": "#00ABA9",
+   "featured": false
+  },
+  {
+   "id": "de.haeckerfelix.Fragments",
+   "name": "Fragments",
+   "developer": "Felix Häcker",
+   "category": "internet",
+   "summary": "Download torrents",
+   "description": "An easy BitTorrent client.",
+   "color": "#00ABA9",
+   "featured": false
+  },
+  {
+   "id": "org.qbittorrent.qBittorrent",
+   "name": "qBittorrent",
+   "developer": "The qBittorrent Project",
+   "category": "internet",
+   "summary": "BitTorrent client",
+   "description": "A full featured BitTorrent client.",
+   "color": "#00ABA9",
+   "featured": false
+  },
+  {
+   "id": "app.drey.Warp",
+   "name": "Warp",
+   "developer": "Fina Wilke",
+   "category": "internet",
+   "summary": "Send files securely",
+   "description": "Send files to other devices over the internet with a code.",
+   "color": "#00ABA9",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Weather",
+   "name": "Weather",
+   "developer": "The GNOME Project",
+   "category": "tools",
+   "summary": "Show weather conditions and forecast",
+   "description": "Weather for your places, with a phone layout.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Characters",
+   "name": "Characters",
+   "developer": "The GNOME Project",
+   "category": "tools",
+   "summary": "Character map",
+   "description": "Find and copy emoji and special characters.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "info.febvre.Komikku",
+   "name": "Komikku",
+   "developer": "Valéry Febvre",
+   "category": "tools",
+   "summary": "Read manga and comics",
+   "description": "An online and offline manga reader made for phones.",
+   "color": "#647687",
+   "featured": true
+  },
+  {
+   "id": "io.github.seadve.Mousai",
+   "name": "Mousai",
+   "developer": "Dave Patrick Caberto",
+   "category": "tools",
+   "summary": "Identify songs",
+   "description": "Find out which song is playing around you.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "io.github.seadve.Kooha",
+   "name": "Kooha",
+   "developer": "Dave Patrick Caberto",
+   "category": "tools",
+   "summary": "Record your screen",
+   "description": "A simple screen recorder.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Solanum",
+   "name": "Solanum",
+   "developer": "Chris Talbot",
+   "category": "tools",
+   "summary": "Balance work and rest",
+   "description": "A pomodoro timer.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "dev.Cogitri.Health",
+   "name": "Health",
+   "developer": "Rasmus Thomsen",
+   "category": "tools",
+   "summary": "Track your fitness",
+   "description": "Track steps, weight and workouts.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "com.clarahobbs.chessclock",
+   "name": "Chess Clock",
+   "developer": "Clara Hobbs",
+   "category": "tools",
+   "summary": "Time games of chess",
+   "description": "A chess clock made for phones.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "fr.romainvigier.MetadataCleaner",
+   "name": "Metadata Cleaner",
+   "developer": "Romain Vigier",
+   "category": "tools",
+   "summary": "Remove metadata from your files",
+   "description": "Clean hidden information from pictures and documents before sharing them.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "io.gitlab.adhami3310.Impression",
+   "name": "Impression",
+   "developer": "Khaleel Al-Adhami",
+   "category": "tools",
+   "summary": "Create bootable drives",
+   "description": "Write disk images to USB drives.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "io.gitlab.adhami3310.Converter",
+   "name": "Switcheroo",
+   "developer": "Khaleel Al-Adhami",
+   "category": "tools",
+   "summary": "Convert and manipulate images",
+   "description": "Convert pictures between formats, also many at once.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "com.github.tenderowl.frog",
+   "name": "Frog",
+   "developer": "Andrey Maksimov",
+   "category": "tools",
+   "summary": "Extract text from images",
+   "description": "Copy text out of pictures and screenshots.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "com.github.finefindus.eyedropper",
+   "name": "Eyedropper",
+   "developer": "FineFindus",
+   "category": "tools",
+   "summary": "Pick and format colors",
+   "description": "Pick colors from the screen and copy them in many formats.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "dev.geopjr.Collision",
+   "name": "Collision",
+   "developer": "Evangelos Paterakis",
+   "category": "tools",
+   "summary": "Check hashes for your files",
+   "description": "Verify downloads with MD5, SHA-1, SHA-256 and more.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.World.PikaBackup",
+   "name": "Pika Backup",
+   "developer": "Small Mammal Collective",
+   "category": "tools",
+   "summary": "Keep your data safe",
+   "description": "Simple, encrypted backups with BorgBackup.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.DejaDup",
+   "name": "Déjà Dup Backups",
+   "developer": "The GNOME Project",
+   "category": "tools",
+   "summary": "Protect yourself from data loss",
+   "description": "Easy, scheduled backups.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "io.github.flattool.Warehouse",
+   "name": "Warehouse",
+   "developer": "Heliguy",
+   "category": "tools",
+   "summary": "Manage all things Flatpak",
+   "description": "View, remove and back up your Flatpak apps and their data.",
+   "color": "#647687",
+   "featured": false
+  },
+  {
+   "id": "com.shatteredpixel.shatteredpixeldungeon",
+   "name": "Shattered Pixel Dungeon",
+   "developer": "Evan Debenham",
+   "category": "games",
+   "summary": "Roguelike dungeon crawler",
+   "description": "A pixel art dungeon game that plays well on touch screens.",
+   "color": "#60A917",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Sudoku",
+   "name": "Sudoku",
+   "developer": "The GNOME Project",
+   "category": "games",
+   "summary": "Test your logic skills",
+   "description": "Classic Sudoku with four difficulties.",
+   "color": "#60A917",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Chess",
+   "name": "Chess",
+   "developer": "The GNOME Project",
+   "category": "games",
+   "summary": "Play the classic two-player game",
+   "description": "Play chess against the computer or a friend.",
+   "color": "#60A917",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Mahjongg",
+   "name": "Mahjongg",
+   "developer": "The GNOME Project",
+   "category": "games",
+   "summary": "Match tiles and clear the board",
+   "description": "The classic tile matching game.",
+   "color": "#60A917",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Aisleriot",
+   "name": "AisleRiot Solitaire",
+   "developer": "The GNOME Project",
+   "category": "games",
+   "summary": "Play many different solitaire games",
+   "description": "More than 80 card games.",
+   "color": "#60A917",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Quadrapassel",
+   "name": "Quadrapassel",
+   "developer": "The GNOME Project",
+   "category": "games",
+   "summary": "Fit falling blocks together",
+   "description": "The classic falling blocks game.",
+   "color": "#60A917",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Crosswords",
+   "name": "Crosswords",
+   "developer": "The GNOME Project",
+   "category": "games",
+   "summary": "Solve crossword puzzles",
+   "description": "Crosswords and other word puzzles, with a phone layout.",
+   "color": "#60A917",
+   "featured": false
+  },
+  {
+   "id": "com.github.Anuken.Mindustry",
+   "name": "Mindustry",
+   "developer": "Anuken",
+   "category": "games",
+   "summary": "Factory-building tower defense",
+   "description": "Build supply chains to defend your base.",
+   "color": "#60A917",
+   "featured": false
+  },
+  {
+   "id": "net.lutris.Lutris",
+   "name": "Lutris",
+   "developer": "Lutris Team",
+   "category": "games",
+   "summary": "Play all your games",
+   "description": "One place for games from many stores and emulators.",
+   "color": "#60A917",
+   "featured": false
+  },
+  {
+   "id": "org.kiwix.desktop",
+   "name": "Kiwix",
+   "developer": "Kiwix",
+   "category": "education",
+   "summary": "Offline Wikipedia and more",
+   "description": "Read Wikipedia and other sites without an internet connection.",
+   "color": "#FA6800",
+   "featured": false
+  },
+  {
+   "id": "org.kde.kstars",
+   "name": "KStars",
+   "developer": "KDE",
+   "category": "education",
+   "summary": "Desktop planetarium",
+   "description": "Explore the night sky.",
+   "color": "#FA6800",
+   "featured": false
+  },
+  {
+   "id": "org.kde.ktouch",
+   "name": "KTouch",
+   "developer": "KDE",
+   "category": "education",
+   "summary": "Learn to type",
+   "description": "A touch typing tutor.",
+   "color": "#FA6800",
+   "featured": false
+  },
+  {
+   "id": "org.kde.kate",
+   "name": "Kate",
+   "developer": "KDE",
+   "category": "development",
+   "summary": "Advanced text editor",
+   "description": "A powerful editor for code and text.",
+   "color": "#6A00FF",
+   "featured": false
+  },
+  {
+   "id": "org.geany.Geany",
+   "name": "Geany",
+   "developer": "Geany Team",
+   "category": "development",
+   "summary": "A fast and lightweight IDE",
+   "description": "A small, fast code editor.",
+   "color": "#6A00FF",
+   "featured": false
+  },
+  {
+   "id": "re.sonny.Workbench",
+   "name": "Workbench",
+   "developer": "Sonny Piers",
+   "category": "development",
+   "summary": "Learn and prototype with GNOME technologies",
+   "description": "Write GTK interfaces and code and see the result live.",
+   "color": "#6A00FF",
+   "featured": false
+  },
+  {
+   "id": "org.gnome.Boxes",
+   "name": "Boxes",
+   "developer": "The GNOME Project",
+   "category": "development",
+   "summary": "Virtualization made simple",
+   "description": "Run other operating systems in virtual machines.",
+   "color": "#6A00FF",
+   "featured": false
+  },
+  {
+   "id": "io.dbeaver.DBeaverCommunity",
+   "name": "DBeaver",
+   "developer": "DBeaver Corp",
+   "category": "development",
+   "summary": "Universal database tool",
+   "description": "Work with SQL and NoSQL databases.",
+   "color": "#6A00FF",
+   "featured": false
   }
  ]
 }

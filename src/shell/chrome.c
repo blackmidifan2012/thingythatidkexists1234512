@@ -29,7 +29,7 @@ void chrome_status_draw(UI *ui, Rect area, bool light) {
 			else icon_draw_wifi_level(cr, x + 9, cy + 1, 16, col_alpha(fg, 0.5f), 0);
 			x += 26;
 		}
-		if (sys_demo()) { icon_draw_signal(cr, x + 9, cy, 14, fg, 3); x += 24; }
+		if (sys_demo()) { icon_draw_signal(cr, x + 9, cy, 15, fg, 4); x += 24; }
 	}
 	if (cfg.quiet_hours) { icon_draw(cr, ICON_MOON, x + 8, cy, 14, fg); x += 22; }
 	if (cfg.battery_saver) { gfx_fill_circle(cr, x + 6, cy, 3, fg); x += 14; }
@@ -37,8 +37,10 @@ void chrome_status_draw(UI *ui, Rect area, bool light) {
 	time_t t = time(NULL);
 	struct tm tm;
 	localtime_r(&t, &tm);
+	/* the time only, like Windows Phone's status bar: no AM/PM */
 	char tb[32];
-	i18n_fmt_time(tb, sizeof tb, &tm, cfg.h24);
+	if (cfg.h24) i18n_fmt_time(tb, sizeof tb, &tm, true);
+	else snprintf(tb, sizeof tb, "%d:%02d", tm.tm_hour % 12 ? tm.tm_hour % 12 : 12, tm.tm_min);
 	double rx = area.w - 10;
 	Size ts = gfx_text_size(cr, tb, 14, FW_SEMILIGHT, 0, 1);
 	gfx_text(cr, tb, rx, cy - ts.h / 2, 14, FW_SEMILIGHT, fg, TA_RIGHT, 0, 1);
@@ -226,7 +228,7 @@ void chrome_toast_draw(UI *ui) {
 	if (dismiss) {
 		n->toasted = true;
 		vec_remove(&sh.toasts, 0);
-		if (n->internal) shell_notify_remove(n->id);
+		if (n->internal && !n->keep) shell_notify_remove(n->id);
 		if (sh.toasts.len) sh.toasts.items[0]->toast_t0 = 0;
 		drag_x = 0;
 		ui->redraw = true;

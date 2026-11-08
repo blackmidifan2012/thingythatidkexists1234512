@@ -504,6 +504,21 @@ static double g_touch_x[16], g_touch_y[16];      /* last position of each touch 
 static double g_touch_ox[16], g_touch_oy[16];    /* layout origin of the surface a client touch started on */
 
 static void touch_coords(struct wlr_touch *touch, double nx, double ny, double *lx, double *ly) {
+	Output *o = srv.out;
+	if (o && o->wlr->transform != WL_OUTPUT_TRANSFORM_NORMAL) {
+		/* wlroots maps touches straight onto the turned layout: turn them like the picture
+		 * (panel -> layout is the output transform, as in wlr_box_transform()) */
+		double u = nx, v = ny;
+		switch (o->wlr->transform) {
+		case WL_OUTPUT_TRANSFORM_90: u = 1 - ny; v = nx; break;
+		case WL_OUTPUT_TRANSFORM_180: u = 1 - nx; v = 1 - ny; break;
+		case WL_OUTPUT_TRANSFORM_270: u = ny; v = 1 - nx; break;
+		default: break;
+		}
+		*lx = u * o->lw;
+		*ly = v * o->lh;
+		return;
+	}
 	wlr_cursor_absolute_to_layout_coords(srv.cursor, &touch->base, nx, ny, lx, ly);
 }
 
@@ -518,6 +533,9 @@ static void on_touch_down(struct wl_listener *l, void *data) {
 	g_touch_x[id] = x;
 	g_touch_y[id] = y;
 	if (sh.screen_off) { shell_wake(); g_touch_target[id] = T_NONE; return; }
+	/* a touch whose up got lost must not keep the shell deaf to new ones */
+	if (g_shell_touch_id >= 0 && (g_shell_touch_id == id || g_touch_target[g_shell_touch_id] != T_SHELL))
+		g_shell_touch_id = -1;
 	if (shell_wants_pointer(x, y)) {
 		if (g_shell_touch_id < 0) {
 			g_shell_touch_id = id;

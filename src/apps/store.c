@@ -23,6 +23,8 @@ static const struct { const char *key, *label; } CATS[] = {
 
 static VEC(Item) g_items;
 static bool g_loaded, g_have_flatpak, g_listing, g_listed;
+static bool g_have_remote;            /* flathub is set up: installs skip remote-add */
+static VEC(int) g_queue;              /* installs waiting for the running operation */
 static int g_cat, g_sel, g_op = OP_NONE, g_op_item = -1;
 static char g_query[128];
 static bool g_focus_search;
@@ -91,6 +93,11 @@ static void refresh_installed(void) {
 	g_listing = proc_run(argv, list_done, NULL);
 }
 
+static void remotes_done(int status, char *out, size_t len, void *ud) {
+	(void)len; (void)ud;
+	g_have_remote = status == 0 && out && strstr(out, "flathub");
+}
+
 static void ensure_loaded(void) {
 	if (g_loaded) return;
 	g_loaded = true;
@@ -98,6 +105,15 @@ static void ensure_loaded(void) {
 	load_catalog();
 	g_have_flatpak = proc_exists("flatpak");
 	refresh_installed();
+	if (g_have_flatpak && !g_have_remote) {
+		char *argv[] = {"flatpak", "remotes", "--columns=name", NULL};
+		proc_run(argv, remotes_done, NULL);
+	}
+}
+
+static bool queued(int item) {
+	for (int i = 0; i < g_queue.len; i++) if (g_queue.items[i] == item) return true;
+	return false;
 }
 
 /* ---------------------------------------------------------------- operations */
@@ -121,26 +137,44 @@ static void op_step(int step) {
 static void op_done(int status, char *out, size_t len, void *ud) {
 	(void)out; (void)len;
 	int step = (int)(intptr_t)ud;
-	if (g_op == OP_INSTALL && step == 0) { op_step(1); return; }   /* remote added (or present) */
+	if (g_op == OP_INSTALL && step == 0) {   /* remote added (or present) */
+		g_have_remote = status == 0;
+		op_step(1);
+		return;
+	}
 	const char *name = g_op_item >= 0 ? g_items.items[g_op_item].name : _("Store");
 	const char *msg;
 	if (g_op == OP_INSTALL) msg = status == 0 ? _("installed. you'll find it in your apps list.") :
 	                              _("couldn't install this app. check your internet connection and try again.");
 	else if (g_op == OP_UNINSTALL) msg = status == 0 ? _("uninstalled.") : _("couldn't uninstall this app.");
 	else msg = status == 0 ? _("your apps are up to date.") : _("some apps couldn't be updated.");
-	shell_toast(name, msg, tr("Store"));
+	shell_post(tr("Store"), name, msg);
 	g_op = OP_NONE;
 	g_op_item = -1;
 	desktop_scan();
 	refresh_installed();
+	if (g_queue.len) {
+		int next = g_queue.items[0];
+		vec_remove(&g_queue, 0);
+		g_op = OP_INSTALL;
+		g_op_item = next;
+		op_step(g_have_remote ? 1 : 0);
+	}
 	shell_invalidate();
 }
 
 static void start_op(int op, int item) {
-	if (g_op != OP_NONE || !g_have_flatpak) return;
+	if (!g_have_flatpak) return;
+	/* installs can be lined up while another one downloads */
+	if (g_op != OP_NONE) {
+		if (op == OP_INSTALL && item != g_op_item && !queued(item)) vec_push(&g_queue, item);
+		shell_invalidate();
+		return;
+	}
 	g_op = op;
 	g_op_item = item;
-	op_step(0);
+	/* adding the remote fetches flathub's repo file every time: only when it is missing */
+	op_step(op == OP_INSTALL && g_have_remote ? 1 : 0);
 	shell_invalidate();
 }
 
@@ -174,6 +208,7 @@ static void letter_tile(UI *ui, Rect r, const Item *it, double size) {
 
 static const char *status_text(int i) {
 	if (g_op_item == i) return g_op == OP_INSTALL ? _("installing...") : _("uninstalling...");
+	if (queued(i)) return _("waiting to install...");
 	return g_items.items[i].installed ? _("installed") : NULL;
 }
 
@@ -337,9 +372,9 @@ static void detail_page(UI *ui, Rect area) {
 
 	bool busy = g_op != OP_NONE;
 	double bw = MIN(200, (w - 12) / 2);
-	if (g_op_item == g_sel) {
+	if (g_op_item == g_sel || queued(g_sel)) {
 		gfx_text(cr, status_text(g_sel), x, y, 20, FW_SEMILIGHT, th->fg, TA_LEFT, w, 1);
-		ui_progress_bar(ui, R(x, y + 34, w, 10), -1);
+		if (g_op_item == g_sel) ui_progress_bar(ui, R(x, y + 34, w, 10), -1);
 		y += 60;
 	} else if (it->installed) {
 		if (ui_button_enabled(ui, ui_id("st-open"), R(x, y, bw, 52), _("open"), BTN_OUTLINE, true)) open_app(it);
@@ -350,7 +385,7 @@ static void detail_page(UI *ui, Rect area) {
 		}
 		y += 72;
 	} else {
-		if (ui_button_enabled(ui, ui_id("st-inst"), R(x, y, bw, 52), _("install"), BTN_OUTLINE, g_have_flatpak && !busy))
+		if (ui_button_enabled(ui, ui_id("st-inst"), R(x, y, bw, 52), _("install"), BTN_OUTLINE, g_have_flatpak))
 			start_op(OP_INSTALL, g_sel);
 		y += 72;
 	}
@@ -400,7 +435,7 @@ static bool store_back(void) {
 }
 
 static void store_close(void) {
-	if (g_op != OP_NONE) return;   /* a running install still needs the item */
+	if (g_op != OP_NONE || g_queue.len) return;   /* a running install still needs the items */
 	for (int i = 0; i < g_items.len; i++) {
 		Item *it = &g_items.items[i];
 		free(it->id); free(it->name); free(it->dev); free(it->cat); free(it->summary); free(it->desc);

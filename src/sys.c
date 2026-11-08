@@ -480,3 +480,72 @@ void sys_init(bool demo) {
 	poll_all(NULL);
 	g_poll_timer = timer_add(15000, true, poll_all, NULL);
 }
+
+/* ---------------------------------------------------------- accelerometer */
+
+static char g_accel[256] = "-";   /* IIO device directory, "" = none, "-" = not looked for yet */
+static double g_mount[9] = {1, 0, 0, 0, 1, 0, 0, 0, 1};
+static int g_forced_orient = -1;
+
+static void accel_find(void) {
+	g_accel[0] = 0;
+	DIR *d = opendir("/sys/bus/iio/devices");
+	if (!d) return;
+	struct dirent *e;
+	while ((e = readdir(d))) {
+		char *dir = xasprintf("/sys/bus/iio/devices/%s", e->d_name);
+		char *x = path_join(dir, "in_accel_x_raw");
+		bool ok = e->d_name[0] != '.' && file_exists(x);
+		free(x);
+		if (ok) {
+			str_copy(g_accel, sizeof g_accel, dir);
+			/* "x1, y1, z1; x2, y2, z2; x3, y3, z3" turns the chip's axes into the phone's */
+			const char *names[] = {"in_accel_mount_matrix", "mount_matrix"};
+			for (int i = 0; i < 2; i++) {
+				char *p = path_join(dir, names[i]);
+				char *m = read_sys_file(p);
+				free(p);
+				double v[9];
+				if (m && sscanf(m, "%lf, %lf, %lf; %lf, %lf, %lf; %lf, %lf, %lf", &v[0], &v[1], &v[2], &v[3], &v[4],
+				                &v[5], &v[6], &v[7], &v[8]) == 9)
+					memcpy(g_mount, v, sizeof v);
+				free(m);
+				if (m) break;
+			}
+		}
+		free(dir);
+		if (ok) break;
+	}
+	closedir(d);
+}
+
+bool sys_has_accel(void) {
+	if (g_accel[0] == '-') accel_find();
+	return g_accel[0] != 0 || g_forced_orient >= 0;
+}
+
+void sys_force_orientation(int o) { g_forced_orient = o; }
+
+/* The same angles and thresholds as iio-sensor-proxy, so phones rotate the way they do
+ * under Phosh and Plasma Mobile. */
+int sys_orientation(int prev) {
+	if (g_forced_orient >= 0) return g_forced_orient;
+	if (!sys_has_accel()) return ORIENT_NORMAL;
+	const char *axes[3] = {"in_accel_x_raw", "in_accel_y_raw", "in_accel_z_raw"};
+	double raw[3];
+	for (int i = 0; i < 3; i++) {
+		char *p = path_join(g_accel, axes[i]);
+		raw[i] = read_sys_int(p, 0);
+		free(p);
+	}
+	double x = g_mount[0] * raw[0] + g_mount[1] * raw[1] + g_mount[2] * raw[2];
+	double y = g_mount[3] * raw[0] + g_mount[4] * raw[1] + g_mount[5] * raw[2];
+	double z = g_mount[6] * raw[0] + g_mount[7] * raw[1] + g_mount[8] * raw[2];
+	if (x == 0 && y == 0 && z == 0) return prev;
+	double portrait = atan2(x, sqrt(y * y + z * z)) * 180 / M_PI;
+	double landscape = atan2(y, sqrt(x * x + z * z)) * 180 / M_PI;
+	if (fabs(portrait) > 35 && fabs(landscape) > 35) return prev;   /* on the border: keep */
+	if (fabs(portrait) > 35) return portrait > 0 ? ORIENT_LEFT_UP : ORIENT_RIGHT_UP;
+	if (fabs(landscape) > 35) return landscape > 0 ? ORIENT_BOTTOM_UP : ORIENT_NORMAL;
+	return prev;   /* lying flat */
+}

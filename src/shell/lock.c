@@ -1,4 +1,5 @@
 #include "shell.h"
+#include "../apps/apps.h"
 #include "../config.h"
 #include "../desktop.h"
 #include "../i18n.h"
@@ -84,7 +85,7 @@ static void draw_notifications(UI *ui, double x, double y, double w) {
 	int shown = 0;
 	for (int i = sh.notifs.len - 1; i >= 0 && shown < 2; i--) {
 		Notification *n = sh.notifs.items[i];
-		if (n->internal) continue;
+		if (n->internal && !n->keep) continue;
 		double ry = y + shown * 50;
 		icon_draw(cr, ICON_MESSAGE, x + 14, ry + 20, 22, RGBX(0xffffff));
 		gfx_text(cr, n->summary, x + 40, ry, 18, FW_SEMIBOLD, COL_WHITE, TA_LEFT, w - 40, 1);
@@ -125,6 +126,16 @@ static void draw_keypad(UI *ui, double top, double alpha) {
 	if (ui_clicked(ui, oid) && sh.locked && strlen(g_pin) >= 1) submit_pin(ui);
 }
 
+/* Outside the PIN pad the lock screen is one big drag area. A touch right after the screen
+ * wakes can come before the lock screen's first frame, while the hit areas are still those
+ * of whatever showed before it locked, and the slide was lost: take such touches here. */
+void lock_pointer_down(UI *ui) {
+	if (!sh.locked || g_pin_mode || dialog_active() || clock_overlay_active() || phone_overlay_active()) return;
+	UiId lid = ui_id("lock-drag");
+	ui->p.active = ui->p.captured = ui->down_id = lid;
+	ui->p.active_layer = UL_DIALOG;
+}
+
 void lock_draw(UI *ui, Rect area) {
 	cairo_t *cr = ui->cr;
 	double pos = shell_lock_pos();
@@ -152,6 +163,7 @@ void lock_draw(UI *ui, Rect area) {
 	if (active && !g_pin_mode) {
 		double dx, dy;
 		if (ui_dragging(ui, lid)) {
+			g_snapping = false;   /* a new slide wins over the previous one's snap back */
 			if (!shell_lock_dragging()) { g_drag_start_y = ui->p.y; g_drag_base_pos = pos; ui->p.fy = ui->p.y; }
 			if (ui_drag_delta(ui, lid, &dx, &dy)) {
 				shell_lock_set_pos(pos - dy / sh.h, true);

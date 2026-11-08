@@ -219,15 +219,27 @@ static void ic_globe(cairo_t *cr) {
 	MV(-10, 0); LN(10, 0); MV(-8.5, -5); LN(8.5, -5); MV(-8.5, 5); LN(8.5, 5); STROKE();
 }
 
+/* Windows Phone's Wi-Fi glyph: a solid quarter fan from the bottom point, cut into four
+ * bands; bands above the signal level are dimmed. */
 static void ic_wifi_arcs(cairo_t *cr, int level) {
-	cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
-	double r[3] = {5.5, 9.5, 13.5};
-	for (int i = 0; i < 3; i++) {
-		if (level <= i && level >= 0) { cairo_save(cr); gfx_set_color(cr, (Color){0.5f, 0.5f, 0.5f, 0.45f}); }
-		arc(cr, 0, 8, r[i], -135, -45); STROKE();
-		if (level <= i && level >= 0) cairo_restore(cr);
+	static const double R[5] = {0, 5, 8.5, 12, 15.5};
+	cairo_pattern_t *full = cairo_get_source(cr);
+	cairo_pattern_reference(full);
+	for (int i = 0; i < 4; i++) {
+		double r0 = i ? R[i] + 1.3 : 0, r1 = R[i + 1];
+		cairo_new_path(cr);
+		cairo_arc(cr, 0, 9, r1, -135 * M_PI / 180, -45 * M_PI / 180);
+		if (r0 > 0) cairo_arc_negative(cr, 0, 9, r0, -45 * M_PI / 180, -135 * M_PI / 180);
+		else cairo_line_to(cr, 0, 9);
+		cairo_close_path(cr);
+		if (level >= 0 && i > level) {
+			double r, g, b, a;
+			if (cairo_pattern_get_rgba(full, &r, &g, &b, &a) == CAIRO_STATUS_SUCCESS) cairo_set_source_rgba(cr, r, g, b, a * 0.35);
+		}
+		cairo_fill(cr);
+		cairo_set_source(cr, full);
 	}
-	circle(cr, 0, 8, 1.6); FILL();
+	cairo_pattern_destroy(full);
 }
 static void ic_wifi(cairo_t *cr) { ic_wifi_arcs(cr, 3); }
 
@@ -831,10 +843,12 @@ void icon_draw(cairo_t *cr, Icon ic, double cx, double cy, double size, Color c)
 void icon_draw_battery(cairo_t *cr, double cx, double cy, double size, Color c, int pct, bool charging) {
 	begin(cr, cx, cy, size, c);
 	cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
-	rect(cr, -11, -5.5, 19, 11); STROKE();
-	rect(cr, 9, -2, 2.5, 4); FILL();
+	/* Windows Phone proportions: long and slim, thin outline, a small nub */
+	cairo_set_line_width(cr, 1.5);
+	rect(cr, -12, -5, 21, 10); STROKE();
+	rect(cr, 9.75, -2.25, 2, 4.5); FILL();
 	double f = CLAMP(pct, 0, 100) / 100.0;
-	if (f > 0) { rect(cr, -9, -3.5, 15 * f, 7); FILL(); }
+	if (f > 0) { rect(cr, -10.25, -3.25, 17.5 * f, 6.5); FILL(); }
 	if (charging) {
 		cairo_save(cr);
 		cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
@@ -846,10 +860,11 @@ void icon_draw_battery(cairo_t *cr, double cx, double cy, double size, Color c, 
 
 void icon_draw_signal(cairo_t *cr, double cx, double cy, double size, Color c, int bars) {
 	begin(cr, cx, cy, size, c);
-	for (int i = 0; i < 4; i++) {
+	/* Windows Phone: five thin bars rising from a common baseline */
+	for (int i = 0; i < 5; i++) {
 		Color cc = i < bars ? c : col_alpha(c, 0.35f);
 		gfx_set_color(cr, cc);
-		rect(cr, -10 + i * 5.5, 9 - (i + 1) * 4.5, 3.5, (i + 1) * 4.5); FILL();
+		rect(cr, -11 + i * 4.6, 9 - (i + 1) * 3.6, 2.8, (i + 1) * 3.6); FILL();
 	}
 	cairo_restore(cr);
 }

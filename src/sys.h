@@ -17,6 +17,12 @@ bool sys_demo(void);
 
 Battery sys_battery(void);
 
+/* Accelerometer (IIO), for rotating apps: which edge of the phone points up. */
+enum { ORIENT_NORMAL, ORIENT_LEFT_UP, ORIENT_RIGHT_UP, ORIENT_BOTTOM_UP };
+bool sys_has_accel(void);
+int sys_orientation(int prev);
+void sys_force_orientation(int o);              /* tests: -1 = use the sensor */
+
 bool sys_has_backlight(void);
 int sys_brightness(void);                 /* 0..100 */
 void sys_set_brightness(int pct);

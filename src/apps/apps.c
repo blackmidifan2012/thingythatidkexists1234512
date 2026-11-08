@@ -326,33 +326,52 @@ static int g_sound_kind = -1;
 static const char *g_player;
 
 static char *sound_file(int kind) {
-	static const char *names[] = {"alarm.wav", "chime.wav", "timer.wav", "key.wav", "warn.wav"};
+	static const char *names[] = {"alarm.wav", "chime.wav", "timer.wav", "key2.wav", "warn.wav", "ring.wav"};
 	char *dir = xdg_dir("XDG_CACHE_HOME", ".cache", "metrowl");
 	char *path = path_join(dir, names[kind]);
 	free(dir);
 	if (file_exists(path)) return path;
 	/* 16 bit mono PCM tones: a rising two-tone pattern for alarms, a soft chime otherwise */
 	const int rate = 22050;
-	static const struct { double f, start, len; } NOTES[5][6] = {
+	static const struct { double f, start, len; } NOTES[6][6] = {
 		{{880, 0.0, 0.16}, {1175, 0.2, 0.16}, {880, 0.4, 0.16}, {1175, 0.6, 0.16}, {0, 0, 0}},
 		{{1046.5, 0.0, 0.5}, {1568, 0.14, 0.6}, {0, 0, 0}},
 		{{988, 0.0, 0.12}, {988, 0.18, 0.12}, {988, 0.36, 0.12}, {0, 0, 0}},
-		{{1800, 0.0, 0.03}, {0, 0, 0}},                       /* key: a short soft tick */
+		{{0, 0, 0}},                                          /* key: synthesised below */
 		{{784, 0.0, 0.2}, {587, 0.22, 0.34}, {0, 0, 0}},      /* warning: falling two-tone */
+		/* ringtone: a marimba arpeggio, then a rest before it repeats */
+		{{1318.5, 0.0, 0.6}, {1661.2, 0.14, 0.6}, {1975.5, 0.28, 0.6}, {2637, 0.42, 0.7}, {1975.5, 0.7, 0.6}, {2637, 0.84, 0.9}},
 	};
-	double dur = kind == SND_ALARM ? 1.4 : kind == SND_CHIME ? 0.9 : kind == SND_KEY ? 0.04 : kind == SND_WARN ? 0.6 : 1.0;
-	double decay = kind == SND_CHIME ? 6 : kind == SND_KEY ? 140 : 3, attack = kind == SND_KEY ? 0.001 : 0.01;
+	double dur = kind == SND_ALARM ? 1.4 : kind == SND_CHIME ? 0.9 : kind == SND_KEY ? 0.035 : kind == SND_WARN ? 0.6
+	           : kind == SND_RING ? 2.2 : 1.0;
+	double decay = kind == SND_CHIME ? 6 : kind == SND_RING ? 7 : 3, attack = kind == SND_RING ? 0.002 : 0.01;
 	int ns = (int)(dur * rate);
 	size_t bytes = 44 + (size_t)ns * 2;
 	unsigned char *w = xcalloc(1, bytes);
 	int16_t *pcm = (int16_t *)(w + 44);
 	for (int k = 0; k < 6 && NOTES[kind][k].f > 0; k++) {
 		int s0 = (int)(NOTES[kind][k].start * rate), sl = (int)(NOTES[kind][k].len * rate);
+		double f = NOTES[kind][k].f;
 		for (int i = 0; i < sl && s0 + i < ns; i++) {
-			double t = (double)i / rate, env = MIN(1.0, t / attack) * exp(-t * decay) * (kind == SND_KEY ? 0.5 : 1);
-			double v = sin(2 * M_PI * NOTES[kind][k].f * t) * 0.6 + sin(4 * M_PI * NOTES[kind][k].f * t) * 0.15;
+			double t = (double)i / rate, env = MIN(1.0, t / attack) * exp(-t * decay);
+			/* marimba: a bright 4th partial that dies out quickly over the fundamental */
+			double v = kind == SND_RING ? sin(2 * M_PI * f * t) * 0.55 + sin(8 * M_PI * f * t) * 0.25 * exp(-t * 30)
+			                            : sin(2 * M_PI * f * t) * 0.6 + sin(4 * M_PI * f * t) * 0.15;
 			int s = pcm[s0 + i] + (int)(v * env * 9000);
 			pcm[s0 + i] = (int16_t)CLAMP(s, -32000, 32000);
+		}
+	}
+	if (kind == SND_KEY) {
+		/* Metro's key click: a dry, woody tock rather than a beep. A few ms of noise for the
+		 * attack over two quickly damped resonances. */
+		uint32_t seed = 12345;
+		for (int i = 0; i < ns; i++) {
+			double t = (double)i / rate;
+			seed = seed * 1664525u + 1013904223u;
+			double noise = ((seed >> 9) / 4194304.0 - 1.0) * exp(-t * 1400);
+			double body = sin(2 * M_PI * 1150 * t) * exp(-t * 300) + sin(2 * M_PI * 2400 * t) * 0.45 * exp(-t * 520);
+			double v = (noise * 0.35 + body * 0.5) * MIN(1.0, t / 0.0004);
+			pcm[i] = (int16_t)CLAMP(v * 7000, -32000, 32000);
 		}
 	}
 	uint32_t u32;
@@ -380,9 +399,18 @@ static bool player_ready(void) {
 	return *g_player;
 }
 
+/* The ringtone can be any sound file the player handles (aplay: WAV only). */
+static char *sound_path(int kind) {
+	if (kind == SND_RING && cfg.ringtone[0] && file_exists(cfg.ringtone) &&
+	    (!str_eq(g_player, "aplay") || str_ends(cfg.ringtone, ".wav")))
+		return xstrdup(cfg.ringtone);
+	return sound_file(kind);
+}
+
 static void sound_start(int kind) {
 	if (!player_ready()) return;
-	char *path = sound_file(kind);
+	if (kind == SND_RING && str_eq(cfg.ringtone, "none")) return;
+	char *path = sound_path(kind);
 	char *argv[] = {(char *)g_player, str_eq(g_player, "aplay") ? "-q" : path, str_eq(g_player, "aplay") ? path : NULL, NULL};
 	if (!proc_run(argv, sound_done, NULL)) g_sound_loop = false;
 	free(path);

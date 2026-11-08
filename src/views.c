@@ -176,6 +176,10 @@ static void resolve_app(View *v) {
 	v->app = desktop_find_by_app_id(v->app_id);
 }
 
+/* Dialogs coming and going re-activate their app only while it is the one on screen, not
+ * over Start or another app. */
+static bool fg_on_screen(void) { return g_fg && sh.screen == SCR_EXT && sh.cur_view == g_fg; }
+
 static void view_map(struct wl_listener *l, void *data) {
 	View *v = wl_container_of(l, v, map);
 	v->mapped = true;
@@ -195,7 +199,7 @@ static void view_map(struct wl_listener *l, void *data) {
 	if (v->is_dialog && v->parent) {
 		wlr_scene_node_set_enabled(&v->tree->node, view_is_descendant_of(v, g_fg));
 		view_place(v);
-		if (g_fg && view_is_descendant_of(v, g_fg)) view_activate(g_fg);
+		if (fg_on_screen() && view_is_descendant_of(v, g_fg)) view_activate(g_fg);
 		return;
 	}
 	shell_view_mapped(v);
@@ -212,7 +216,7 @@ static void view_unmap(struct wl_listener *l, void *data) {
 	if (srv.seat->keyboard_state.focused_surface &&
 	    view_from_surface(srv.seat->keyboard_state.focused_surface) == v)
 		input_focus_view(NULL);
-	if (v->is_dialog && v->parent && g_fg) { view_activate(g_fg); return; }
+	if (v->is_dialog && v->parent) { if (fg_on_screen()) view_activate(g_fg); return; }
 	shell_view_unmapped(v);
 }
 
@@ -253,6 +257,9 @@ static void view_destroy(struct wl_listener *l, void *data) {
 	View *o;
 	wl_list_for_each(o, &srv.views, link) if (o->parent == v) o->parent = NULL;
 	if (g_fg == v) g_fg = NULL;
+	/* the decoration (and popups) are destroyed after the toplevel and look the view up
+	 * through this pointer: it must not lead to the freed view */
+	v->xdg->base->data = NULL;
 	shell_view_unmapped(v);   /* in case unmap never arrived */
 	free(v->app_id);
 	free(v->title);

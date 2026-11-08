@@ -28,6 +28,7 @@ static void set_defaults(void) {
 	cfg.celsius = true;
 	cfg.nav_autohide = true;
 	cfg.phone_apps = true;
+	cfg.auto_rotate = true;
 	cfg.key_sound = true;
 	str_copy(cfg.icon_mode, sizeof cfg.icon_mode, "auto");
 }
@@ -79,6 +80,8 @@ static void load_fields(void) {
 	GET_STR("region", region);
 	GET_BOOL("nav_autohide", nav_autohide);
 	GET_BOOL("phone_apps", phone_apps);
+	GET_BOOL("auto_rotate", auto_rotate);
+	GET_STR("ringtone", ringtone);
 	/* one-time switch to full-colour third-party icons (older configs saved monochrome) */
 	if (!cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(g_root, "colour_icons_v1"))) {
 		cfg.mono_icons = false;
@@ -129,6 +132,8 @@ static void store_fields(void) {
 	PUT_S("region", region);
 	PUT_BOOL("nav_autohide", nav_autohide);
 	PUT_BOOL("phone_apps", phone_apps);
+	PUT_BOOL("auto_rotate", auto_rotate);
+	PUT_S("ringtone", ringtone);
 }
 
 cJSON *config_root(void) { return g_root; }

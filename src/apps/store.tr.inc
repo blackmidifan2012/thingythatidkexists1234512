@@ -38,3 +38,4 @@
 	{"install flatpak to get this app.", "bu uygulamayı almak için flatpak'i yükleyin."},
 	{"app id", "uygulama kimliği"},
 	{"flathub page", "flathub sayfası"},
+	{"waiting to install...", "yüklenmeyi bekliyor..."},

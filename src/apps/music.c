@@ -2128,8 +2128,17 @@ static void draw_strip(UI *ui, Rect r) {
 	double as = r.h - 18;
 	art_draw(ui, c->art, R(r.x + 14, r.y + 10, as, as), false);
 	double x = r.x + 14 + as + 14, w = r.w - (x - r.x) - 80;
+	/* time left, under the title on the right */
+	double left_w = 0;
+	if (dur > 0) {
+		char b[24], rb[28];
+		fmt_dur(MAX(0, dur - (owns ? player_position() : 0)), b, sizeof b);
+		snprintf(rb, sizeof rb, "-%s", b);
+		left_w = gfx_text_size(cr, rb, 15, FW_REGULAR, 0, 1).w + 10;
+		gfx_text(cr, rb, x + w, r.y + 36, 15, FW_REGULAR, th->sub, TA_RIGHT, 0, 1);
+	}
 	gfx_text(cr, c->title, x, r.y + 10, 20, FW_SEMILIGHT, th->fg, TA_LEFT, w, 1);
-	gfx_text(cr, artist_name(c->artist), x, r.y + 36, 15, FW_REGULAR, th->sub, TA_LEFT, w, 1);
+	gfx_text(cr, artist_name(c->artist), x, r.y + 36, 15, FW_REGULAR, th->sub, TA_LEFT, MAX(20, w - left_w), 1);
 	if (ui_circle_button(ui, ui_id("mus-strip-pp"), rect_right(r) - 42, rect_cy(r), 44, playing ? ICON_PAUSE : ICON_PLAY, NULL))
 		music_toggle();
 	else if (ui_clicked(ui, id)) push(PG_NOW, 0);
@@ -2392,14 +2401,14 @@ static void draw_now(UI *ui, Rect area) {
 		iy = y + MAX(0, (avail_h - 300) / 2);
 		iw = rect_right(cnt) - ix - 24;
 	} else {
-		art = MIN(cnt.w - 48, avail_h - 262);
+		art = MIN(cnt.w - 48, avail_h - 300);
 		art = MAX(art, 80);
 		ix = cnt.x + 24;
 		iy = y + art + 16;
 		iw = cnt.w - 48;
 	}
 	/* the page scrolls only when the screen is very short */
-	double need = wide ? 300 : art + 270;
+	double need = wide ? 300 : art + 300;
 	ui_scroll_begin(ui, ui_id("mus-now-scroll"), &g_sc_now, R(cnt.x, y, cnt.w, avail_h), need);
 	Rect ar = R(cnt.x + 24, y, art, art);
 	UiId aid = ui_id("mus-now-art");

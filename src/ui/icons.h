@@ -35,7 +35,7 @@ void icon_draw(cairo_t *cr, Icon ic, double cx, double cy, double size, Color c)
 void icon_draw_ex(cairo_t *cr, Icon ic, double cx, double cy, double size, Color c, int flags);
 /* Parameterised icons. */
 void icon_draw_battery(cairo_t *cr, double cx, double cy, double size, Color c, int pct, bool charging);
-void icon_draw_signal(cairo_t *cr, double cx, double cy, double size, Color c, int bars /*0..4*/);
+void icon_draw_signal(cairo_t *cr, double cx, double cy, double size, Color c, int bars /*0..5*/);
 void icon_draw_wifi_level(cairo_t *cr, double cx, double cy, double size, Color c, int level /*0..3*/);
 /* Metro circle button: ring + glyph. */
 void icon_draw_circle(cairo_t *cr, Icon ic, double cx, double cy, double dia, Color c, double ring);

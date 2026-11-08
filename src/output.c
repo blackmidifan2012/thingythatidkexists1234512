@@ -1,6 +1,7 @@
 #include "server.h"
 #include "config.h"
 #include "shell/shell.h"
+#include "sys.h"
 #include "util.h"
 
 #include <drm_fourcc.h>
@@ -384,6 +385,24 @@ void output_reapply_scale(void) {
 	wlr_output_commit_state(o->wlr, &st);
 	wlr_output_state_finish(&st);
 	output_update(o);
+}
+
+/* Turns the picture for apps that rotate (see shell.c); the shell itself stays upright.
+ * Same mapping as Phosh: the phone's left edge up -> 90, right edge up -> 270. */
+void output_set_orientation(int orient) {
+	Output *o = srv.out;
+	if (!o) return;
+	enum wl_output_transform t = orient == ORIENT_LEFT_UP ? WL_OUTPUT_TRANSFORM_90
+	                           : orient == ORIENT_RIGHT_UP ? WL_OUTPUT_TRANSFORM_270 : WL_OUTPUT_TRANSFORM_NORMAL;
+	if (o->wlr->transform == t) return;
+	struct wlr_output_state st;
+	wlr_output_state_init(&st);
+	wlr_output_state_set_transform(&st, t);
+	wlr_output_commit_state(o->wlr, &st);
+	wlr_output_state_finish(&st);
+	output_update(o);
+	wlr_damage_ring_add_whole(&o->scene_output->damage_ring);
+	srv_schedule_frame();
 }
 
 void output_set_blanked(bool blank) {

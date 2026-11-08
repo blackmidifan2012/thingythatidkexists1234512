@@ -1,4 +1,5 @@
 #include "proc.h"
+#include "config.h"
 #include "server.h"
 #include "util.h"
 
@@ -99,6 +100,8 @@ static void child_env(void) {
 	/* ask toolkits for their phone / touch layouts (Kirigami, Plasma Mobile, Qt Quick, GTK) */
 	setenv("QT_QUICK_CONTROLS_MOBILE", "1", 0);
 	setenv("PLASMA_PLATFORM", "phone:handset", 0);
+	setenv("KDE_KIRIGAMI_TABLET_MODE", "1", 0);           /* Kirigami's touch sizes and behaviour */
+	setenv("ELECTRON_OZONE_PLATFORM_HINT", "auto", 0);   /* Electron apps on Wayland, properly scaled */
 	setenv("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1", 0);
 	setenv("GTK_CSD", "0", 0);
 	setenv("MOZ_USE_XINPUT2", "1", 0);
@@ -186,6 +189,8 @@ bool proc_spawn(char *const argv[]) {
 		}
 		signal(SIGPIPE, SIG_DFL);
 		child_env();
+		/* apps follow the Metro theme (libadwaita's colour scheme), unless the user set one */
+		if (!getenv("ADW_DEBUG_COLOR_SCHEME")) setenv("ADW_DEBUG_COLOR_SCHEME", cfg.dark ? "prefer-dark" : "prefer-light", 1);
 		execvp(argv[0], argv);
 		_exit(127);
 	}

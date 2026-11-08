@@ -35,9 +35,11 @@ typedef struct Config {
 	char region[8];            /* regional format: "" = follow language, "en" / "tr" */
 	bool nav_autohide;         /* hide the navigation bar over Linux apps (swipe up to show) */
 	bool phone_apps;           /* Linux apps at phone size (360 px wide pages), see output.c */
+	bool auto_rotate;          /* turn browsers, players and games with the phone, see shell.c */
 	bool key_sound;            /* click when on-screen keys are pressed */
 	char notif_sound[256];     /* sound file, "" = built-in chime, "none" = silent */
 	char warn_sound[256];      /* same for warnings such as low battery */
+	char ringtone[256];        /* incoming calls: sound file, "" = built-in, "none" = silent */
 } Config;
 
 extern Config cfg;

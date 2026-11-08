@@ -49,6 +49,9 @@ extern const AppDef app_settings, app_store, app_photos, app_calculator, app_clo
  * Clock for a ringing alarm or timer. clock_overlay_active() decides whether it is shown;
  * Back is offered to clock_overlay_back() first. */
 bool clock_overlay_active(void);
+/* Incoming call page above everything, the lock screen included (phone.c). */
+bool phone_overlay_active(void);
+void phone_overlay_draw(UI *ui, Rect r);
 void clock_overlay_draw(UI *ui, Rect full);
 bool clock_overlay_back(void);
 
@@ -106,7 +109,7 @@ cJSON *app_json_load(const char *name);          /* NULL when missing or invalid
 bool app_json_save(const char *name, const cJSON *root);
 
 /* ---- sounds (generated tones played with pw-play / paplay / aplay when available) */
-enum { SND_ALARM, SND_CHIME, SND_TIMER, SND_KEY, SND_WARN };
+enum { SND_ALARM, SND_CHIME, SND_TIMER, SND_KEY, SND_WARN, SND_RING };   /* SND_RING: cfg.ringtone */
 /* Short event sounds, silent when muted. The notification and warning sounds are the
  * user's choice (cfg.notif_sound / cfg.warn_sound). */
 enum { EV_KEY, EV_NOTIF, EV_WARN };

@@ -1,6 +1,7 @@
 /* Phone: a dialer for ModemManager modems, driven through mmcli. Places outgoing
  * calls, shows the call state and duration, and sends touch tones during a call.
- * Incoming calls are not handled yet. */
+ * Incoming calls ring with cfg.ringtone and show a full screen answer / ignore page
+ * (also over the lock screen). */
 #include "apps.h"
 #include "../config.h"
 #include "../i18n.h"
@@ -19,6 +20,13 @@ static char g_status[96];         /* message under the number when not in a call
 static double g_active_t0;        /* when the call was answered */
 static bool g_polling;
 static Timer *g_poll;
+static bool g_incoming;           /* g_call rang in (ringing or answered) */
+static bool g_answered;
+static char g_caller[40];
+static Timer *g_watch;            /* asks ModemManager for ringing calls */
+static bool g_watching;
+
+static void watch_tick(void *ud);
 
 static void set_status(const char *s) {
 	str_copy(g_status, sizeof g_status, s);
@@ -30,6 +38,7 @@ static void modem_done(int status, char *out, size_t len, void *ud) {
 	const char *m = status == 0 && out ? strstr(out, "/Modem/") : NULL;
 	g_modem = m ? atoi(m + 7) : -1;
 	set_status(g_modem >= 0 ? "" : _("No modem found. Calls need a working modem and ModemManager."));
+	if (g_modem >= 0 && !g_watch) g_watch = timer_add(2500, true, watch_tick, NULL);
 }
 
 static void modem_check(void) {
@@ -49,7 +58,12 @@ static void call_finished(void) {
 	snprintf(del, sizeof del, "--voice-delete-call=%d", g_call);
 	char *argv[] = {"mmcli", "-m", m, del, NULL};
 	proc_run(argv, NULL, NULL);
+	if (g_incoming) {
+		app_sound_stop();
+		if (!g_answered) shell_post(_("Phone"), _("Missed call"), g_caller[0] ? g_caller : _("unknown number"));
+	}
 	g_call = -1;
+	g_incoming = g_answered = false;
 	g_state[0] = 0;
 	if (g_poll) timer_set(g_poll, 0);
 	set_status(_("call ended"));
@@ -67,6 +81,15 @@ static void poll_done(int status, char *out, size_t len, void *ud) {
 	while (s[n] && s[n] != ' ' && s[n] != '\n' && n + 1 < sizeof g_state) n++;
 	memcpy(g_state, s, n);
 	g_state[n] = 0;
+	const char *num = g_incoming && !g_caller[0] ? strstr(out, "number:") : NULL;
+	if (num) {
+		num += 7;
+		while (*num == ' ') num++;
+		size_t k = 0;
+		while (num[k] && num[k] != ' ' && num[k] != '\n' && k + 1 < sizeof g_caller) k++;
+		memcpy(g_caller, num, k);
+		g_caller[k] = 0;
+	}
 	if (str_eq(g_state, "terminated")) { call_finished(); return; }
 	if (str_eq(g_state, "active") && g_active_t0 == 0) g_active_t0 = now_sec();
 	shell_invalidate();
@@ -98,6 +121,95 @@ static void created_done(int status, char *out, size_t len, void *ud) {
 	shell_invalidate();
 }
 
+/* ------------------------------------------------------------- incoming -- */
+
+static void watch_done(int status, char *out, size_t len, void *ud) {
+	(void)len; (void)ud;
+	g_watching = false;
+	if (status != 0 || !out || g_call >= 0) return;
+	/* ".../Call/3 incoming (ringing-in)" */
+	for (const char *c = strstr(out, "/Call/"); c; c = strstr(c + 6, "/Call/")) {
+		const char *eol = strchr(c, '\n'), *ring = strstr(c, "(ringing-in)");
+		if (!ring || (eol && ring > eol)) continue;
+		g_call = atoi(c + 6);
+		g_incoming = true;
+		g_answered = false;
+		g_caller[0] = 0;
+		g_active_t0 = 0;
+		str_copy(g_state, sizeof g_state, "ringing-in");
+		app_sound(SND_RING, true);
+		shell_wake();
+		if (!g_poll) g_poll = timer_add(0, true, poll_tick, NULL);
+		timer_set(g_poll, 1000);
+		poll_tick(NULL);   /* the caller's number */
+		break;
+	}
+}
+
+static void watch_tick(void *ud) {
+	(void)ud;
+	if (g_modem < 0 || g_call >= 0 || g_watching) return;
+	char m[16];
+	snprintf(m, sizeof m, "%d", g_modem);
+	char *argv[] = {"mmcli", "-m", m, "--voice-list-calls", NULL};
+	g_watching = proc_run(argv, watch_done, NULL);
+}
+
+static void call_answer(void) {
+	if (g_call < 0) return;
+	char o[16];
+	snprintf(o, sizeof o, "%d", g_call);
+	char *argv[] = {"mmcli", "-o", o, "--accept", NULL};
+	proc_run(argv, NULL, NULL);
+	app_sound_stop();
+	g_answered = true;
+	str_copy(g_state, sizeof g_state, "active");
+	g_active_t0 = now_sec();
+	str_copy(g_num, sizeof g_num, g_caller);
+	if (!sh.locked) shell_open_builtin("phone", NULL);
+	shell_invalidate();
+}
+
+static void call_hangup(void);
+
+bool phone_overlay_active(void) {
+	return g_incoming && g_call >= 0 && (!g_answered || sh.locked);
+}
+
+/* Incoming call page, Windows Phone style: who is calling, then answer / ignore. Stays
+ * over the lock screen while an answered call lasts so it can be ended there. */
+void phone_overlay_draw(UI *ui, Rect r) {
+	cairo_t *cr = ui->cr;
+	const Theme *th = &ui->th;
+	ui_hit(ui, ui_id("ph-ov-bg"), r);
+	gfx_fill_rect(cr, r, th->bg);
+	double y = r.y + sh.status_h + 24;
+	gfx_text(cr, i18n_upper(g_answered ? _("on call") : _("incoming call")), r.x + 24, y, 15, FW_SEMIBOLD, th->accent,
+	         TA_LEFT, r.w - 48, 1);
+	y += 26;
+	y += gfx_text(cr, g_caller[0] ? g_caller : _("unknown number"), r.x + 22, y, 46, FW_LIGHT, th->fg, TA_LEFT, r.w - 44, 2);
+	if (g_answered && g_active_t0 > 0) {
+		int s = (int)(now_sec() - g_active_t0);
+		char d[24];
+		snprintf(d, sizeof d, "%d:%02d", s / 60, s % 60);
+		gfx_text(cr, d, r.x + 24, y + 6, 20, FW_SEMILIGHT, th->sub, TA_LEFT, 0, 1);
+	}
+	double bh = 64, by = rect_bottom(r) - bh - 40, gap = 12;
+	int n = g_answered ? 1 : 2;
+	double bw = (r.w - 48 - gap * (n - 1)) / n;
+	for (int i = 0; i < n; i++) {
+		bool end = g_answered || i == 1;
+		Rect br = R(r.x + 24 + i * (bw + gap), by, bw, bh);
+		UiId id = ui_idn("ph-ov-btn", i);
+		ui_hit(ui, id, br);
+		Color bg = end ? RGBX(0xE51400) : th->accent;
+		gfx_fill_rect(cr, br, ui_pressed(ui, id) ? col_mix(bg, COL_BLACK, 0.3f) : bg);
+		gfx_text_in(cr, end ? (g_answered ? _("end call") : _("ignore")) : _("answer"), br, 22, FW_SEMILIGHT, COL_WHITE,
+		            TA_CENTER, true);
+		if (ui_clicked(ui, id)) { if (end) call_hangup(); else call_answer(); }
+	}
+}
+
 static void call_start(void) {
 	if (!g_num[0] || g_call >= 0) return;
 	if (g_modem < 0) {
@@ -118,6 +230,7 @@ static void call_hangup(void) {
 	snprintf(o, sizeof o, "%d", g_call);
 	char *argv[] = {"mmcli", "-o", o, "--hangup", NULL};
 	proc_run(argv, NULL, NULL);
+	if (g_incoming) { app_sound_stop(); g_answered = true; }   /* ignored, not missed */
 	str_copy(g_state, sizeof g_state, "ending");
 	shell_invalidate();
 }
@@ -140,6 +253,7 @@ static void key_pressed(const char *k) {
 static const char *state_label(void) {
 	if (str_eq(g_state, "active")) return _("on call");
 	if (str_eq(g_state, "ringing-out")) return _("ringing…");
+	if (str_eq(g_state, "ringing-in")) return _("incoming call");
 	if (str_eq(g_state, "held")) return _("on hold");
 	if (str_eq(g_state, "ending")) return _("ending call…");
 	return _("calling…");
@@ -228,8 +342,11 @@ static void phone_draw(UI *ui, Rect area) {
 
 static bool phone_back(void) { return false; }
 
+/* watch for incoming calls from start-up, not only once the dialer was opened */
+static void phone_init(void) { if (g_modem == -2) modem_check(); }
+
 const AppDef app_phone = {
 	.id = "phone", .name = N_("Phone"), .icon = ICON_PHONE, .color = 0,
 	.keywords = "dialer call dial number telephone arama telefon numara",
-	.open = phone_open, .draw = phone_draw, .back = phone_back,
+	.init = phone_init, .open = phone_open, .draw = phone_draw, .back = phone_back,
 };

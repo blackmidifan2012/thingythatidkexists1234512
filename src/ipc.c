@@ -253,6 +253,14 @@ static void run_command(Client *c, char *line) {
 	if (str_eq(cmd, "launch")) { if (n > 1) shell_launch(args[1]); finish(c, n > 1 ? "ok" : "err missing app"); return; }
 	if (str_eq(cmd, "open")) { if (n > 1) shell_open_builtin(args[1], n > 2 ? args[2] : NULL); finish(c, n > 1 ? "ok" : "err missing app"); return; }
 	if (str_eq(cmd, "exec")) { if (rest) proc_spawn_sh(rest); finish(c, rest ? "ok" : "err missing command"); return; }
+	if (str_eq(cmd, "rotate")) {   /* tests without a sensor: normal | left | right | auto */
+		const char *a = n > 1 ? args[1] : "auto";
+		sys_force_orientation(str_eq(a, "left") ? ORIENT_LEFT_UP : str_eq(a, "right") ? ORIENT_RIGHT_UP
+		                      : str_eq(a, "normal") ? ORIENT_NORMAL : -1);
+		shell_invalidate();
+		finish(c, "ok");
+		return;
+	}
 	if (str_eq(cmd, "keyboard")) { shell_show_keyboard(n < 2 || !str_eq(args[1], "off")); finish(c, "ok"); return; }
 	if (str_eq(cmd, "tiles")) {
 		for (int i = 0; i < start_tile_count(); i++) {

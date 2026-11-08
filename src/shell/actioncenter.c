@@ -150,7 +150,7 @@ void actioncenter_draw(UI *ui) {
 
 	/* ---- notifications header */
 	int count = 0;
-	for (int i = 0; i < sh.notifs.len; i++) if (!sh.notifs.items[i]->internal) count++;
+	for (int i = 0; i < sh.notifs.len; i++) if (!sh.notifs.items[i]->internal || sh.notifs.items[i]->keep) count++;
 	gfx_text(cr, i18n_upper(_("notifications")), 16, y + 2, 14, FW_SEMIBOLD, th->sub, TA_LEFT, sh.w / 2, 1);
 	if (count) {
 		Rect cr_ = R(sh.w - 120, y - 4, 110, 32);
@@ -175,7 +175,7 @@ void actioncenter_draw(UI *ui) {
 		time_t now_t = time(NULL);
 		for (int k = sh.notifs.len - 1; k >= 0; k--) {
 			Notification *n = sh.notifs.items[k];
-			if (n->internal) continue;
+			if (n->internal && !n->keep) continue;
 			UiId id = ui_idn("ac-notif", (int)n->id);
 			double *st = ui_state(ui, id, 0);   /* st[0] = x offset, st[1] = removal progress */
 			double h = ROW_H * (1 - st[1]);

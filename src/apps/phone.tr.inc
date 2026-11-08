@@ -12,3 +12,8 @@
 	{"No modem found. Calls need a working modem and ModemManager.", "Modem bulunamadı. Arama yapmak için çalışan bir modem ve ModemManager gerekir."},
 	{"ModemManager (mmcli) is not installed, so calls can't be made.", "ModemManager (mmcli) yüklü değil, bu yüzden arama yapılamıyor."},
 	{"The call could not be started.", "Arama başlatılamadı."},
+	{"Missed call", "Cevapsız arama"},
+	{"unknown number", "bilinmeyen numara"},
+	{"incoming call", "gelen arama"},
+	{"ignore", "yoksay"},
+	{"answer", "cevapla"},

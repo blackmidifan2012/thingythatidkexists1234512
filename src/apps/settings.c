@@ -805,6 +805,7 @@ static void page_accent(Pg *p) {
 }
 
 /* sound pickers: "none", "default", then the installed sound files */
+#define PICK_RING (-1)   /* g_snd_ev for the ringtone, the others are EV_* */
 static int g_snd_ev;
 static char **g_snd_paths;
 static int g_snd_n;
@@ -817,13 +818,15 @@ static void sound_label(const char *path, char *out, size_t cap) {
 }
 
 static void sound_pick_cb(int i, void *ud) {
-	char *dst = g_snd_ev == EV_NOTIF ? cfg.notif_sound : cfg.warn_sound;
+	char *dst = g_snd_ev == EV_NOTIF ? cfg.notif_sound : g_snd_ev == EV_WARN ? cfg.warn_sound : cfg.ringtone;
 	if (i == 0) str_copy(dst, sizeof cfg.notif_sound, "none");
 	else if (i == 1) dst[0] = 0;
 	else if (i >= 2 && i - 2 < g_snd_n) str_copy(dst, sizeof cfg.notif_sound, g_snd_paths[i - 2]);
 	else return;
 	config_save_soon();
-	app_play_event(g_snd_ev);   /* let the user hear the choice */
+	/* let the user hear the choice */
+	if (g_snd_ev == PICK_RING) app_sound(SND_RING, false);
+	else app_play_event(g_snd_ev);
 }
 
 static void sound_combo(Pg *p, const char *key, const char *label, const char *value, int ev) {
@@ -863,10 +866,11 @@ static void page_sounds(Pg *p) {
 	if (pg_toggle(p, "set-mute", _("Mute"), &m)) sys_set_mute(m);
 	pg_text(p, _("When muted, apps and notifications don't play sounds. Alarms still ring."));
 	if (pg_button(p, "set-snd-test", _("play a sound"), !m)) app_sound(SND_CHIME, false);
+	sound_combo(p, "set-snd-ring", _("Ringtone"), cfg.ringtone, PICK_RING);
 	sound_combo(p, "set-snd-notif", _("Notification sound"), cfg.notif_sound, EV_NOTIF);
 	sound_combo(p, "set-snd-warn", _("Warning sound"), cfg.warn_sound, EV_WARN);
 	if (pg_toggle(p, "set-snd-key", _("Key press sounds"), &cfg.key_sound)) config_save_soon();
-	pg_text(p, _("Sounds come from the sound themes installed on the phone (for example sound-theme-freedesktop) and from ~/.local/share/sounds."));
+	pg_text(p, _("Sounds come from the sound themes installed on the phone (for example sound-theme-freedesktop) and from ~/.local/share/sounds. Any sound file can also be set from Files: tap and hold it."));
 }
 
 static void page_notif(Pg *p) {
@@ -1056,6 +1060,8 @@ static void page_display(Pg *p) {
 	pg_text(p, _("Makes everything on the screen bigger or smaller. Automatic picks a size that suits the screen."));
 	if (pg_toggle(p, "set-d-apps", _("Phone-size Linux apps"), &cfg.phone_apps)) apply_soon();
 	pg_text(p, _("Shows GNOME, KDE and other Linux apps at the size they are made for on phones, so they use their phone layouts. Turn off to fit more into them."));
+	if (sys_has_accel() && pg_toggle(p, "set-d-rot", _("Rotate apps"), &cfg.auto_rotate)) config_save_soon();
+	if (sys_has_accel()) pg_text(p, _("Browsers, video players, games and picture viewers turn with the phone. Start and the built-in apps stay upright."));
 }
 
 static void page_datetime(Pg *p) {

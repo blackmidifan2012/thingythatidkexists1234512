@@ -129,7 +129,8 @@ bool uilayer_visible(const UiLayer *l);
 void output_init_primary(struct wlr_output *wlr);
 void output_set_blanked(bool blank);
 void output_reapply_scale(void);
-double output_layout_per_dp(void);                /* layout px (apps, cursor) per shell dp */
+double output_layout_per_dp(void);
+void output_set_orientation(int orient);         /* ORIENT_*, see sys.h */                /* layout px (apps, cursor) per shell dp */
 void output_request_capture(void (*cb)(cairo_surface_t *surf, void *ud), void *ud);
 extern UiLayer *g_layer_base, *g_layer_overlay;
 

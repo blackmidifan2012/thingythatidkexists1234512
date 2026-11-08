@@ -143,7 +143,7 @@ int server_main(void) {
 	if (srv.session && proc_exists("dbus-update-activation-environment")) {
 		char *argv[] = {"dbus-update-activation-environment", "--systemd", "WAYLAND_DISPLAY",
 			"XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE", "MOZ_ENABLE_WAYLAND", "QT_QUICK_CONTROLS_MOBILE",
-			"PLASMA_PLATFORM", "QT_WAYLAND_DISABLE_WINDOWDECORATION", "GTK_CSD", "QT_QPA_PLATFORM",
+			"PLASMA_PLATFORM", "KDE_KIRIGAMI_TABLET_MODE", "ELECTRON_OZONE_PLATFORM_HINT", "QT_WAYLAND_DISABLE_WINDOWDECORATION", "GTK_CSD", "QT_QPA_PLATFORM",
 			"SDL_VIDEODRIVER", "_JAVA_AWT_WM_NONREPARENTING", NULL};
 		proc_spawn(argv);   /* the variables are set in the child, see child_env() */
 	}

@@ -1046,8 +1046,24 @@ static void open_props(const char *path, const Level *from) {
 
 /* ---------------------------------------------------------- context menu - */
 
-enum { A_OPEN, A_TERMINAL, A_RENAME, A_COPY, A_CUT, A_DELETE, A_PROPS, A_PASTE_INTO, A_WALL_LOCK, A_WALL_START };
-static int g_menu_act[10];
+enum { A_OPEN, A_TERMINAL, A_RENAME, A_COPY, A_CUT, A_DELETE, A_PROPS, A_PASTE_INTO, A_WALL_LOCK, A_WALL_START,
+	A_RINGTONE, A_NOTIF_SND, A_WARN_SND, A_COUNT };
+static int g_menu_act[A_COUNT];
+
+static bool is_sound_file(const char *p) {
+	static const char *ext[] = {".mp3", ".ogg", ".oga", ".opus", ".wav", ".flac", ".m4a", ".aac"};
+	size_t n = strlen(p);
+	for (size_t i = 0; i < ARRAY_LEN(ext); i++)
+		if (n > strlen(ext[i]) && strcasecmp(p + n - strlen(ext[i]), ext[i]) == 0) return true;
+	return false;
+}
+
+/* "set as ringtone / notification / warning sound" */
+static void set_sound(char *dst, const char *path, const char *what) {
+	str_copy(dst, sizeof cfg.ringtone, path);
+	config_save_soon();
+	shell_toast(what, path_basename(path), tr("Settings"));
+}
 
 static char **one_path(const char *p) {
 	char **v = xmalloc(sizeof(char *));
@@ -1056,7 +1072,7 @@ static char **one_path(const char *p) {
 }
 
 static void menu_cb(int idx, void *ud) {
-	if (idx < 0 || idx >= 10 || !g_pending) return;
+	if (idx < 0 || idx >= A_COUNT || !g_pending) return;
 	Level *l = g_lv[g_depth];
 	char *p = xstrdup(g_pending);
 	switch (g_menu_act[idx]) {
@@ -1077,6 +1093,9 @@ static void menu_cb(int idx, void *ud) {
 	case A_PASTE_INTO: paste_into(p); break;
 	case A_WALL_LOCK: photos_set_wallpaper(p, true); break;
 	case A_WALL_START: photos_set_wallpaper(p, false); break;
+	case A_RINGTONE: set_sound(cfg.ringtone, p, _("Ringtone set")); break;
+	case A_NOTIF_SND: set_sound(cfg.notif_sound, p, _("Notification sound set")); break;
+	case A_WARN_SND: set_sound(cfg.warn_sound, p, _("Warning sound set")); break;
 	}
 	free(p);
 }
@@ -1084,16 +1103,22 @@ static void menu_cb(int idx, void *ud) {
 static void open_menu(const char *path, bool folder, bool location, double x, double y) {
 	free(g_pending);
 	g_pending = xstrdup(path);
-	const char *items[10];
+	const char *items[A_COUNT];
 	int n = 0;
 	static const char *labels[] = {N_("open"), N_("open terminal here"), N_("rename"), N_("copy"), N_("cut"),
 		N_("delete"), N_("properties"), N_("paste into folder"), N_("use as lock screen"),
-		N_("use as start background")};
+		N_("use as start background"), N_("set as ringtone"), N_("set as notification sound"),
+		N_("set as warning sound")};
 #define ADD(a) do { g_menu_act[n] = (a); items[n++] = tr(labels[a]); } while (0)
 	ADD(A_OPEN);
 	if (!folder && viewable_picture(path)) {
 		ADD(A_WALL_LOCK);
 		ADD(A_WALL_START);
+	}
+	if (!folder && is_sound_file(path)) {
+		ADD(A_RINGTONE);
+		ADD(A_NOTIF_SND);
+		ADD(A_WARN_SND);
 	}
 	if (folder && g_clip.n && !g_op) ADD(A_PASTE_INTO);
 	if (folder && terminal_available()) ADD(A_TERMINAL);
